@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -7,6 +7,13 @@ const https = require('https');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const jsonc = require('jsonc-parser');
+
+// Disable Chromium GPU/DawnGraphite shader compiler to eliminate Black Screen & "Not Responding" on low-end PCs
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
 const GITHUB_REPO = 'vaasiraq-art/OpenDocFlow';
 const GATEWAY_PORT = 4141;
@@ -595,12 +602,22 @@ const CURATED_FREE_CODING_MODELS = [
   }
 ];
 
+let cachedConfigText = null;
+let cachedConfigTime = 0;
+
 function readConfigText() {
+  const now = Date.now();
+  if (cachedConfigText !== null && now - cachedConfigTime < 4000) {
+    return cachedConfigText;
+  }
   const cfgPath = path.join(getOpenCodeConfigDir(), 'opencode.jsonc');
   if (!fs.existsSync(cfgPath)) {
-    return '{\n  "$schema": "https://opencode.ai/config.json"\n}\n';
+    cachedConfigText = '{\n  "$schema": "https://opencode.ai/config.json"\n}\n';
+  } else {
+    cachedConfigText = fs.readFileSync(cfgPath, 'utf8');
   }
-  return fs.readFileSync(cfgPath, 'utf8');
+  cachedConfigTime = now;
+  return cachedConfigText;
 }
 
 function writeConfigModify(jsonPath, value) {
@@ -613,6 +630,8 @@ function writeConfigModify(jsonPath, value) {
   });
   const updated = jsonc.applyEdits(current, edits);
   fs.writeFileSync(cfgPath, updated, 'utf8');
+  cachedConfigText = updated;
+  cachedConfigTime = Date.now();
 }
 
 // Supports Multi-Key Pooling: a .key file can hold 1 key or multiple keys (one per line)
@@ -1031,11 +1050,13 @@ function startLocalSmartGateway() {
 }
 
 function createWindow() {
+  Menu.setApplicationMenu(null);
   mainWindow = new BrowserWindow({
-    width: 1460,
-    height: 920,
-    minWidth: 1120,
-    minHeight: 720,
+    width: 1380,
+    height: 860,
+    minWidth: 1020,
+    minHeight: 680,
+    show: true,
     backgroundColor: '#181818',
     title: 'OpenDocFlow — AI Agent Gateway, Smart Router & Skill Hub',
     icon: path.join(__dirname, 'assets', 'icon.png'),
@@ -1043,7 +1064,9 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      spellcheck: false,
+      backgroundThrottling: false
     }
   });
 
@@ -1051,8 +1074,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startLocalSmartGateway();
   createWindow();
+  setTimeout(startLocalSmartGateway, 50);
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -1072,24 +1095,34 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+const executablePathCache = new Map();
+
 function findExecutableOnPath(names) {
-  const pathEnv = process.env.PATH || process.env.Path || '';
-  const dirs = pathEnv.split(path.delimiter).filter(Boolean);
-  dirs.push(
-    path.join(os.homedir(), '.local', 'bin'),
-    path.join(process.env.APPDATA || '', 'npm'),
-    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps'),
+  const cacheKey = names.join('|');
+  if (executablePathCache.has(cacheKey)) {
+    return executablePathCache.get(cacheKey);
+  }
+  const fastDirs = [
     'C:\\Program Files\\nodejs',
-    'C:\\Program Files\\Git\\cmd'
-  );
+    'C:\\Program Files\\Git\\cmd',
+    path.join(process.env.APPDATA || '', 'npm'),
+    path.join(os.homedir(), '.local', 'bin'),
+    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps')
+  ];
+  const pathEnv = process.env.PATH || process.env.Path || '';
+  const dirs = [...fastDirs, ...pathEnv.split(path.delimiter).filter(Boolean).slice(0, 20)];
   for (const d of dirs) {
     for (const n of names) {
       const full = path.join(d, n);
       try {
-        if (fs.existsSync(full)) return full;
+        if (fs.existsSync(full)) {
+          executablePathCache.set(cacheKey, full);
+          return full;
+        }
       } catch (_) {}
     }
   }
+  executablePathCache.set(cacheKey, null);
   return null;
 }
 

@@ -168,6 +168,10 @@ if (Test-Path $memorySrc) {
 if ($DryRun) {
     Write-Host "Would copy global Graphify skill, REA skill, and Vercel skills"
 } else {
+    $skillsZip = Join-Path $ConfigSrc 'skills-archive.zip'
+    if ((Test-Path $skillsZip) -and -not (Test-Path (Join-Path $ConfigSrc 'agents-skills'))) {
+        Expand-Archive -Path $skillsZip -DestinationPath $ConfigSrc -Force
+    }
     Copy-SkillSet (Join-Path $ConfigSrc 'skills') (Join-Path $ConfigDir 'skills')
     Copy-SkillSet (Join-Path $ConfigSrc 'agents-skills') $AgentsSkills
 }
