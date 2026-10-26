@@ -115,7 +115,7 @@ Every bottleneck that caused lag or hangs in v3.x has been engineered out:
 ## 🏁 60-Second Quickstart
 
 ### Option A — Download Prebuilt Windows Release (Recommended)
-1. Grab **`OpenDocFlow Setup 4.0.0.exe`** (customizable drive installer) or **`OpenDocFlow-Portable-4.0.0.exe`** (zero-install single executable) from [**Releases**](https://github.com/vaasiraq-art/OpenDocFlow/releases/latest).
+1. Grab **`OpenDocFlow Setup 4.0.1.exe`** (customizable drive installer) or **`OpenDocFlow-Portable-4.0.1.exe`** (zero-install single executable) from [**Releases**](https://github.com/vaasiraq-art/OpenDocFlow/releases/latest).
 2. Open **🔑 AI Keys & Scanner** and paste 1 or more free API keys (one per line for automatic rotation) from **Google AI Studio**, **OpenRouter**, **Groq**, or **Cerebras** — or run local **Ollama**.
 3. Open **⚡ Gateway & Benchmark** → click **🏆 Benchmark & Auto-Sort Fastest**.
 4. Open **🕸 Multi-Agent Hub** → click **⚡ 1-Click Install `@opendocflow` Suite + MCP**, then start building in **🤖 Agent Studio** or click **▶ Launch OpenCode**!

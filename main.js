@@ -44,26 +44,46 @@ const { runAgentTurn, abortActiveAgentRun } = require('./lib/agent-runner');
 const GITHUB_REPO = 'vaasiraq-art/OpenDocFlow';
 const GATEWAY_PORT = 4141;
 
-// Check Safe-GPU setting before app.whenReady() (GPU stays ON by default for 60fps UI)
+// Default to Zero-Black-Screen Rendering (eliminates DawnGraphite/Intel Iris Xe shader hangs & black windows)
+// Users can opt into hardware GPU by unchecking "Safe GPU Mode" in Turbo Installer or passing --enable-gpu.
 function checkSafeGpuBootFlag() {
+  if (process.argv.includes('--enable-gpu')) return false;
   if (process.argv.includes('--safe-gpu')) return true;
   try {
     const settingsFile = path.join(app.getPath('userData'), 'studio-data', 'studio-settings.json');
     if (fs.existsSync(settingsFile)) {
       const parsed = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-      return Boolean(parsed.safeGpuMode);
+      if (typeof parsed.safeGpuMode === 'boolean') return parsed.safeGpuMode;
     }
   } catch (_) {}
-  return false;
+  return true;
 }
 
 if (checkSafeGpuBootFlag()) {
   app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-gpu-compositing');
 }
-// Run Chromium NetworkService in-process & bypass utility-sandbox startup stalls on Windows (<650ms cold start)
+// Prevent Windows token-integrity / sandbox / NetworkService startup deadlocks (<500ms cold start)
 app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-features', 'RendererCodeIntegrity,NetworkServiceSandbox');
 app.commandLine.appendSwitch('enable-features', 'NetworkServiceInProcess');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
+if (!process.argv.includes('--smoke-test')) {
+  const gotSingleLock = app.requestSingleInstanceLock();
+  if (!gotSingleLock) {
+    app.quit();
+  } else {
+    app.on('second-instance', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+  }
+}
 
 let mainWindow = null;
 let activeTerminalProc = null;
@@ -121,7 +141,7 @@ function loadStudioSettings() {
   cachedSettings = {
     portableRoot: defRoot,
     usePortablePrefix: Boolean(defRoot),
-    safeGpuMode: false
+    safeGpuMode: true
   };
   try {
     const f = getSettingsPath();
@@ -806,34 +826,58 @@ function createWindow() {
     minWidth: 1040,
     minHeight: 680,
     show: false,
-    backgroundColor: '#0e1117',
-    title: 'OpenDocFlow v4.0 — AI Agent Studio, Multi-Agent Hub, DocFlow & Smart Gateway',
+    backgroundColor: '#0b0e14',
+    title: 'OpenDocFlow v4.0.1 — AI Agent Studio, Multi-Agent Hub, DocFlow & Smart Gateway',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
       spellcheck: false,
       backgroundThrottling: false
     }
   });
 
   const isSmokeTest = process.argv.includes('--smoke-test');
+  const captureArg = process.argv.find((a) => a.startsWith('--capture-screen='));
+  const capturePath = captureArg ? captureArg.slice('--capture-screen='.length) : '';
   const rendererErrors = [];
+  let loadCompleted = false;
+
   if (isSmokeTest) {
-    mainWindow.webContents.on('console-message', (ev) => {
-      if (ev && (ev.level === 'error' || ev.level >= 3)) {
-        rendererErrors.push(`${ev.sourceId || ''}:${ev.lineNumber || 0} ${ev.message || ''}`);
+    mainWindow.webContents.on('console-message', (ev, legacyLevel, legacyMsg, legacyLine, legacySrc) => {
+      if (ev && typeof ev === 'object' && ('level' in ev || 'message' in ev)) {
+        if (ev.level === 'error' || ev.level >= 3) {
+          rendererErrors.push(`${ev.sourceId || ''}:${ev.lineNumber || 0} ${ev.message || ''}`);
+        }
+      } else if (typeof legacyLevel === 'number' && legacyLevel >= 3) {
+        rendererErrors.push(`${legacySrc || ''}:${legacyLine || 0} ${legacyMsg || ''}`);
       }
     });
     mainWindow.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
+      loadCompleted = true;
+      if (capturePath && !mainWindow.isDestroyed()) {
+        mainWindow.showInactive();
+      }
+      setTimeout(async () => {
+        let capturedBytes = 0;
+        if (capturePath && !mainWindow.isDestroyed()) {
+          try {
+            const img = await mainWindow.webContents.capturePage();
+            const png = img.toPNG();
+            fs.writeFileSync(capturePath, png);
+            capturedBytes = png.length;
+          } catch (_) {}
+        }
         console.log(
           JSON.stringify({
             smokeTest: 'OK',
+            electron: process.versions.electron,
             gatewayRunning: gatewayState.running,
             endpoint: gatewayState.endpoint,
+            capturedBytes,
             rendererErrors
           })
         );
@@ -843,7 +887,7 @@ function createWindow() {
           } catch (_) {}
         }
         app.exit(rendererErrors.length > 0 ? 1 : 0);
-      }, 900);
+      }, 650);
     });
   }
 
@@ -854,8 +898,22 @@ function createWindow() {
       mainWindow.show();
     }
   };
+
   mainWindow.once('ready-to-show', reveal);
-  setTimeout(reveal, 220);
+  mainWindow.webContents.once('did-finish-load', () => {
+    loadCompleted = true;
+    reveal();
+  });
+  setTimeout(reveal, 700);
+
+  // Self-healing watchdog if renderer file load ever stalls
+  setTimeout(() => {
+    if (!loadCompleted && mainWindow && !mainWindow.isDestroyed()) {
+      try {
+        mainWindow.webContents.reloadIgnoringCache();
+      } catch (_) {}
+    }
+  }, 3000);
 
   mainWindow.loadFile(path.join(__dirname, 'app', 'index.html'));
 }

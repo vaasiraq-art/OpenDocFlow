@@ -1,7 +1,7 @@
 {
   "name": "opendocflow",
-  "version": "4.0.0",
-  "description": "OpenDocFlow v4.0 — Autonomous AI Agent Studio, Multi-Agent Hub (@opendocflow + OpenCode V2 + Claude + Codex + Gemini + Qwen + Aider), DocFlow Repo Packager & AI Docs, 1-Click MCP Marketplace & True-SSE Smart Gateway",
+  "version": "4.0.1",
+  "description": "OpenDocFlow v4.0.1 — Autonomous AI Agent Studio, Multi-Agent Hub (@opendocflow + OpenCode V2 + Claude + Codex + Gemini + Qwen + Aider), DocFlow Repo Packager & AI Docs, 1-Click MCP Marketplace & True-SSE Smart Gateway",
   "author": "vaasiraq-art",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
@@ -20,7 +20,7 @@
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
-    "electron": "^45.0.0",
+    "electron": "35.7.5",
     "electron-builder": "^26.18.0"
   },
   "build": {
@@ -81,7 +81,7 @@
       "artifactName": "${productName} Setup ${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
-      "allowElevation": true,
+      "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
