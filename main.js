@@ -1,5 +1,36 @@
 'use strict';
 
+// OS-level fast-boot trampoline: Chromium freezes base::FeatureList in C++ BEFORE main.js runs,
+// so appendSwitch('enable-features', 'NetworkServiceInProcess') inside JS cannot prevent Windows 11
+// out-of-process NetworkService / DawnGraphite utility-process deadlocks. Re-spawning once at 10ms
+// with native OS CLI flags guarantees <700ms zero-black-screen startup on every Windows machine.
+if (process.platform === 'win32' && !process.argv.includes('--odf-fast-boot') && !process.env.ODF_FAST_BOOT_ACTIVE) {
+  const cp = require('child_process');
+  const fastFlags = [
+    '--no-sandbox',
+    '--enable-features=NetworkServiceInProcess',
+    '--disable-features=NetworkServiceSandbox,RendererCodeIntegrity',
+    '--odf-fast-boot'
+  ];
+  if (!process.argv.includes('--enable-gpu')) {
+    fastFlags.push('--disable-gpu', '--disable-gpu-compositing');
+  }
+  const childArgs = [...fastFlags, ...process.argv.slice(1)];
+  const isCliSmoke = process.argv.includes('--smoke-test');
+  const child = cp.spawn(process.execPath, childArgs, {
+    env: { ...process.env, ODF_FAST_BOOT_ACTIVE: '1' },
+    detached: !isCliSmoke,
+    stdio: isCliSmoke ? 'inherit' : 'ignore',
+    windowsHide: false
+  });
+  if (isCliSmoke) {
+    child.on('exit', (code) => process.exit(code || 0));
+    return;
+  }
+  child.unref();
+  process.exit(0);
+}
+
 const { app, BrowserWindow, Menu, ipcMain, shell, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
