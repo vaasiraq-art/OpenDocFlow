@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenCode Studio — AI Coding Hub, Skills, Plugins & Models</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">O</div>
+        <div>
+          <div class="brand-title">OpenCode Studio</div>
+          <div class="brand-sub">v1.0.0 • Palenight Edition</div>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-btn active" data-tab="dashboard">
+          <span class="nav-dot"></span> Dashboard & Setup
+        </button>
+        <button class="nav-btn" data-tab="prereqs">
+          <span class="nav-dot"></span> Apps & Drivers Wizard
+        </button>
+        <button class="nav-btn" data-tab="keys">
+          <span class="nav-dot"></span> AI API Keys (Free & Paid)
+        </button>
+        <button class="nav-btn" data-tab="free-models">
+          <span class="nav-dot"></span> Free Coding Models (Best → Low)
+        </button>
+        <button class="nav-btn" data-tab="skills">
+          <span class="nav-dot"></span> Skills, Plugins & New Project
+        </button>
+        <button class="nav-btn" data-tab="terminal-tab">
+          <span class="nav-dot"></span> Full Terminal Console
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="active-model-box">
+          <div class="label-xs">ACTIVE OPENCODE MODEL</div>
+          <div id="sidebarActiveModel" class="model-pill">Loading...</div>
+        </div>
+        <button id="btnLaunchOpenCode" class="btn btn-primary full-width">
+          Launch OpenCode TUI
+        </button>
+        <button id="btnCreateShortcut" class="btn btn-ghost full-width">
+          Create Desktop Icon
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Area -->
+    <div class="main-area">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="status-indicator online"></span>
+          <span id="topStatusText">OpenCode V2 Ready • All Plugins & REA 6.8.0 Active</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="btnCheckUpdatesTop" class="btn btn-sm btn-outline">Check Updates</button>
+          <button id="btnRestoreAllTop" class="btn btn-sm btn-accent">Restore All Skills & Plugins</button>
+          <button id="btnSnapshotKitTop" class="btn btn-sm btn-ghost">Save to Portable Kit</button>
+        </div>
+      </header>
+
+      <!-- Scrollable Tab Views -->
+      <main class="content-scroll">
+        <!-- TAB 1: DASHBOARD & SETUP -->
+        <section id="tab-dashboard" class="tab-panel active">
+          <div class="hero-banner">
+            <div>
+              <h1>OpenCode All-in-One Control Center</h1>
+              <p>
+                Portable installer, automatic plugin/skill sync, REA 6.8.0 (229 tools), Graphify 0.9.95,
+                universal AI API key manager, and embedded terminal.
+              </p>
+            </div>
+            <div class="hero-buttons">
+              <button id="btnQuickUpdateAll" class="btn btn-primary">Update All Components</button>
+              <button id="btnQuickPrereqModal" class="btn btn-outline">Pre-Install Apps & Drivers</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">OpenCode Runtime</div>
+              <div id="statOpenCode" class="stat-value">Checking...</div>
+              <div class="stat-sub">V2 Client + Background Server</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Installed Plugins</div>
+              <div id="statPlugins" class="stat-value">0</div>
+              <div class="stat-sub">Memory + CC Safety Net</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Global Agent Skills</div>
+              <div id="statSkills" class="stat-value">0</div>
+              <div class="stat-sub">Graphify + REA + 9 Vercel Skills</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">MCP Servers</div>
+              <div id="statMcp" class="stat-value">0</div>
+              <div class="stat-sub">REA 6.8.0 Reverse Engineering</div>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Quick New Project + Skill Finder</h3>
+                <span class="tag">Every New Session</span>
+              </div>
+              <p class="muted">
+                Creates your project folder, adds the Graphify hook, and searches for the next skill you need.
+              </p>
+              <div class="form-row">
+                <label>Project Folder Path (C:, D:, E:, F:)</label>
+                <div class="input-group">
+                  <input id="inpProjectPath" type="text" placeholder="D:\apps\MY ai Agent\apps\my-new-app" />
+                  <button id="btnPickProjectDir" class="btn btn-outline">Browse</button>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>Search Next Skill for This Session (Optional)</label>
+                <input id="inpProjectSkill" type="text" placeholder="e.g. godot, react, android, python, nextjs" />
+              </div>
+              <div class="btn-row">
+                <button id="btnCreateProjectNow" class="btn btn-primary">Create Project & Find Skill</button>
+                <button id="btnOpenProjectTerminal" class="btn btn-outline">Open in OpenCode</button>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Universal Model Switcher (Accepts Any Model)</h3>
+                <span class="tag tag-purple">Instant Switch</span>
+              </div>
+              <p class="muted">
+                Type any <code>provider/model</code> ID (free, paid, or local) to set it as your active OpenCode model.
+              </p>
+              <div class="form-row">
+                <label>Active Model ID (<code>provider/model-id</code>)</label>
+                <div class="input-group">
+                  <input id="inpQuickModel" type="text" placeholder="e.g. google/gemini-2.5-pro or openrouter/qwen/qwen3-coder:free" />
+                  <button id="btnSaveQuickModel" class="btn btn-accent">Set Active Model</button>
+                </div>
+              </div>
+              <div class="quick-chips">
+                <button class="chip" data-model="google/gemini-2.5-pro">google/gemini-2.5-pro</button>
+                <button class="chip" data-model="google/gemini-2.5-flash">google/gemini-2.5-flash</button>
+                <button class="chip" data-model="openrouter/qwen/qwen3-coder:free">qwen3-coder:free</button>
+                <button class="chip" data-model="openrouter/deepseek/deepseek-r1:free">deepseek-r1:free</button>
+                <button class="chip" data-model="ollama/qwen2.5-coder:14b">ollama/qwen2.5-coder:14b</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: APPS & DRIVERS WIZARD -->
+        <section id="tab-prereqs" class="tab-panel">
+          <div class="panel-card">
+            <div class="card-header">
+              <div>
+                <h2>Pre-Install Apps, Runtimes & Device Drivers</h2>
+                <p class="muted">
+                  Select which required apps, runtimes, or Android USB/ADB drivers you want to install or repair on this PC.
+                </p>
+              </div>
+              <div class="btn-row">
+                <button id="btnSelectMissingPrereqs" class="btn btn-outline">Select Missing</button>
+                <button id="btnInstallSelectedPrereqs" class="btn btn-primary">Install Selected Apps / Drivers</button>
+              </div>
+            </div>
+            <div id="prereqsList" class="prereq-grid"></div>
+          </div>
+        </section>
+
+        <!-- TAB 3: AI API KEYS (FREE, PAID, LOCAL & CUSTOM) -->
+        <section id="tab-keys" class="tab-panel">
+          <div class="two-col">
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Add Custom Provider or Any AI Model</h3>
+                <span class="tag tag-green">Accepts All Models</span>
+              </div>
+              <p class="muted">
+                Connect any OpenAI-compatible gateway, custom provider, or add any new model ID to an existing provider.
+              </p>
+              <div class="form-grid-2">
+                <div class="form-row">
+                  <label>Provider ID</label>
+                  <input id="custProviderId" type="text" placeholder="e.g. openrouter, groq, deepseek, my-ai" />
+                </div>
+                <div class="form-row">
+                  <label>Model ID</label>
+                  <input id="custModelId" type="text" placeholder="e.g. qwen/qwen3-coder:free or gpt-5" />
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-row">
+                  <label>Display Name (Optional)</label>
+                  <input id="custDisplayName" type="text" placeholder="e.g. Qwen 3 Coder Free" />
+                </div>
+                <div class="form-row">
+                  <label>Custom Base URL (Optional)</label>
+                  <input id="custBaseUrl" type="text" placeholder="https://api.example.com/v1" />
+                </div>
+              </div>
+              <div class="form-row">
+                <label>API Key (Saved securely to local key file & .env)</label>
+                <input id="custApiKey" type="password" placeholder="sk-..." />
+              </div>
+              <div class="btn-row">
+                <button id="btnAddCustomModel" class="btn btn-primary">Save Model & Set Active</button>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>How Keys & Models Work in OpenCode</h3>
+                <span class="tag">Private .env + File Refs</span>
+              </div>
+              <ul class="clean-list">
+                <li>Keys are stored locally in <code>%APPDATA%\OpenCode Studio\studio-data\keys\</code> and synced to <code>~/.config/opencode/.env</code>.</li>
+                <li><code>opencode.jsonc</code> uses <code>{file:...}</code> substitutions so secrets are never hardcoded into shared configs.</li>
+                <li>Both <strong>Free</strong> and <strong>Paid</strong> providers are supported out of the box, plus 100% free local runtimes (Ollama & LM Studio).</li>
+                <li>Click <strong>Get API Key</strong> on any provider card below to open its key dashboard.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="panel-card" style="margin-top: 16px;">
+            <div class="card-header">
+              <h3>All AI Providers (Free Tiers, Paid & Local)</h3>
+              <span class="tag">12 Built-in + Custom</span>
+            </div>
+            <div id="providersGrid" class="providers-grid"></div>
+          </div>
+        </section>
+
+        <!-- TAB 4: FREE CODING MODELS (BEST TO LOW) -->
+        <section id="tab-free-models" class="tab-panel">
+          <div class="panel-card" style="margin-bottom: 16px; border-color: rgba(195, 232, 141, 0.4);">
+            <div class="card-header">
+              <div>
+                <h3>Auto-Switch Free Model When Usage/Quota Finishes (Non-Stop Coding)</h3>
+                <p class="muted" style="margin-bottom: 4px;">
+                  Powered by the built-in <code>free-model-autoswitch.js</code> OpenCode V2 plugin. When the active free model hits a rate-limit or usage limit (HTTP 429 / Quota Exceeded), OpenCode automatically switches to the next ranked free model below and continues your session without stopping.
+                </p>
+              </div>
+              <div class="btn-row">
+                <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#c3e88d; font-weight:600; cursor:pointer;">
+                  <input id="chkAutoSwitchFree" type="checkbox" checked /> Auto-Switch Enabled
+                </label>
+                <button id="btnRotateNextFreeNow" class="btn btn-sm btn-accent">Switch to Next Free Model Now</button>
+                <button id="btnSaveFallbackChain" class="btn btn-sm btn-primary">Save Fallback Order</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Ordered Free Model Fallback Chain (One <code>provider/model</code> per line, Best → Low)</label>
+              <textarea id="txtFallbackChain" rows="5" style="width:100%; background:#121521; border:1px solid #2b3048; color:#e4e8f7; padding:10px; border-radius:7px; font-family:Consolas, monospace; font-size:12.5px;"></textarea>
+            </div>
+            <div id="fallbackLastStatus" style="font-size:12px; color:#89ddff;"></div>
+          </div>
+
+          <div class="panel-card">
+            <div class="card-header">
+              <div>
+                <h2>Free AI Coding Models — Ranked Best to Low</h2>
+                <p class="muted">
+                  Curated top free coding tiers (S+ → B) plus live $0 coding models fetched directly from OpenRouter. Click <strong>Use Model</strong> on any row to activate it immediately.
+                </p>
+              </div>
+              <button id="btnRefreshFreeModels" class="btn btn-outline">Refresh Live Models</button>
+            </div>
+
+            <h3 class="section-subtitle">1. Top Ranked Free Coding Models (Best → Low)</h3>
+            <div id="curatedModelsTable" class="models-table"></div>
+
+            <h3 class="section-subtitle" style="margin-top: 24px;">
+              2. Live $0 Free Models on OpenRouter (Auto-Ranked for Coding & Context)
+            </h3>
+            <div id="liveModelsTable" class="models-table"></div>
+          </div>
+        </section>
+
+        <!-- TAB 5: SKILLS, PLUGINS & PORTABLE KIT -->
+        <section id="tab-skills" class="tab-panel">
+          <div class="two-col">
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Search & Install Next Skill for Session</h3>
+                <span class="tag tag-purple">skills.sh CLI</span>
+              </div>
+              <div class="form-row">
+                <label>Search Skills by Topic / Framework</label>
+                <div class="input-group">
+                  <input id="inpSkillSearch" type="text" placeholder="e.g. godot, android, react, python, rust, tailwind" />
+                  <button id="btnSearchSkillNow" class="btn btn-primary">Search Skills</button>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>Install Skill Directly (<code>owner/repo --skill name</code>)</label>
+                <div class="input-group">
+                  <input id="inpSkillInstall" type="text" placeholder="e.g. vercel-labs/agent-skills --skill vercel-react-best-practices" />
+                  <button id="btnInstallSkillNow" class="btn btn-accent">Install Global Skill</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Installed Plugins, MCP & Global Skills</h3>
+                <button id="btnOpenConfigFolder" class="btn btn-sm btn-outline">Open Config Folder</button>
+              </div>
+              <div class="pill-section">
+                <div class="label-xs">ACTIVE PLUGINS & MCP</div>
+                <div id="pillsPlugins" class="pill-wrap"></div>
+              </div>
+              <div class="pill-section" style="margin-top: 12px;">
+                <div class="label-xs">INSTALLED GLOBAL SKILLS</div>
+                <div id="pillsSkills" class="pill-wrap"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 6: FULL TERMINAL CONSOLE -->
+        <section id="tab-terminal-tab" class="tab-panel">
+          <div class="panel-card">
+            <div class="card-header">
+              <div>
+                <h3>Interactive Command & Agent Terminal</h3>
+                <p class="muted">
+                  Run PowerShell, OpenCode, REA, Graphify, or npm commands directly inside the app, or pop out a full-screen TUI window.
+                </p>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-sm btn-outline cmd-preset" data-cmd="opencode --version">opencode --version</button>
+                <button class="btn btn-sm btn-outline cmd-preset" data-cmd="opencode plugin list">opencode plugin list</button>
+                <button class="btn btn-sm btn-outline cmd-preset" data-cmd="graphify --version">graphify --version</button>
+                <button id="btnPopoutTerminal" class="btn btn-sm btn-primary">Open External OpenCode TUI</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Always-Available Embedded Terminal Dock -->
+      <section class="terminal-dock" id="terminalDock">
+        <div class="terminal-header">
+          <div class="terminal-title">
+            <span class="term-badge">TERMINAL</span>
+            <span id="termCwdLabel">PowerShell Embedded Console</span>
+          </div>
+          <div class="terminal-controls">
+            <button id="btnStopTermCmd" class="btn btn-xs btn-danger">Stop Process</button>
+            <button id="btnClearTerm" class="btn btn-xs btn-ghost">Clear</button>
+            <button id="btnToggleDock" class="btn btn-xs btn-outline">Expand / Collapse</button>
+          </div>
+        </div>
+        <pre id="terminalOutput" class="terminal-output">Welcome to OpenCode Studio Embedded Terminal.
+All skills, plugins, REA 6.8.0, and Graphify 0.9.95 commands stream live here.
+</pre>
+        <div class="terminal-input-bar">
+          <span class="prompt-char">PS &gt;</span>
+          <input id="terminalInput" type="text" placeholder="Type any command (e.g. opencode plugin list, graphify --version, adb devices) and press Enter..." />
+          <button id="btnSendTermCmd" class="btn btn-sm btn-primary">Run</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- STARTUP MODAL: UPDATE CHECK & PRE-INSTALL APPS PROMPT -->
+  <div id="startupModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modalTitle">Check for Updates & Required Apps</h2>
+        <button id="btnCloseModal" class="btn btn-xs btn-ghost">✕</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button id="btnModalLater" class="btn btn-ghost">Skip for Now</button>
+        <button id="btnModalPrereqs" class="btn btn-outline">Review Apps & Drivers</button>
+        <button id="btnModalUpdateNow" class="btn btn-primary">Update All Now</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

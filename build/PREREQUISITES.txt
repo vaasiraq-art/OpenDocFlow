@@ -1,0 +1,28 @@
+========================================================================
+  OPENCODE STUDIO - PRE-INSTALL CHECKLIST & REQUIRED APPS / DRIVERS
+========================================================================
+
+Before installing OpenCode Studio to your chosen drive (C:, D:, E:, F:, etc.),
+please review the required and optional tools & drivers below.
+
+On first launch, OpenCode Studio will detect what is already installed on
+this PC and ask you before installing any missing component:
+
+1. Core AI Agent Runtime (Required)
+   - OpenCode V2 CLI (opencode-ai)
+   - Node.js 22.20+ or 26.12.1+ (Required for skills CLI & REA 6.8.0 MCP)
+   - Git for Windows
+
+2. Knowledge Graph & Reverse Engineering (Bundled / Recommended)
+   - Python 3.10+ & uv package manager (for Graphify 0.9.95)
+   - REA 6.8.0 (Reverse Engineer Anything MCP + 229 tools)
+   - OpenCode V2 Plugins: opencode-agent-memory@0.3.0, cc-safety-net@2.6.19
+   - 11 Global Agent Skills (Graphify, REA, 9 Vercel Skills)
+
+3. Optional Device & Terminal Drivers
+   - Android SDK Platform-Tools (ADB / Fastboot) & Google USB Driver
+     (for Android phone testing & APK installation)
+   - Windows Terminal (Recommended for full interactive TUI sessions)
+
+Click "I Agree" to continue, choose your target drive/folder (C:, D:, E:, F:),
+and create your Desktop shortcut.

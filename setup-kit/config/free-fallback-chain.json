@@ -1,0 +1,16 @@
+{
+  "chain": [
+    "google/gemini-2.5-pro",
+    "openrouter/qwen/qwen3-coder:free",
+    "openrouter/deepseek/deepseek-r1:free",
+    "openrouter/deepseek/deepseek-chat-v3-0324:free",
+    "google/gemini-2.5-flash",
+    "mistral/codestral-latest",
+    "groq/llama-3.3-70b-versatile",
+    "groq/qwen-qwq-32b",
+    "ollama/qwen2.5-coder:14b",
+    "ollama/deepseek-coder-v2:16b"
+  ],
+  "cooldownMinutes": 15,
+  "enabled": true
+}
