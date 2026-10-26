@@ -1,4 +1,4 @@
-name: OpenCode Studio CI & Syntax Verification
+name: OpenDocFlow CI & Syntax Verification
 
 on:
   push:

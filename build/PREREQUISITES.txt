@@ -1,11 +1,11 @@
 ========================================================================
-  OPENCODE STUDIO - PRE-INSTALL CHECKLIST & REQUIRED APPS / DRIVERS
+  OpenDocFlow - PRE-INSTALL CHECKLIST & REQUIRED APPS / DRIVERS
 ========================================================================
 
-Before installing OpenCode Studio to your chosen drive (C:, D:, E:, F:, etc.),
+Before installing OpenDocFlow to your chosen drive (C:, D:, E:, F:, etc.),
 please review the required and optional tools & drivers below.
 
-On first launch, OpenCode Studio will detect what is already installed on
+On first launch, OpenDocFlow will detect what is already installed on
 this PC and ask you before installing any missing component:
 
 1. Core AI Agent Runtime (Required)

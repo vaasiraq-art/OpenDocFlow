@@ -1,19 +1,19 @@
-# Contributing to OpenCode Studio
+# Contributing to OpenDocFlow
 
-Thank you for using and improving **OpenCode Studio**!
+Thank you for using and improving **OpenDocFlow**!
 
 ## How to Report a Bug or Error
 
-1. **Inside the OpenCode Studio App (Fastest):**
+1. **Inside the OpenDocFlow App (Fastest):**
    - Open the **Bug Reporter** workspace tab in the top bar.
    - Any runtime or command error is automatically captured (with all API keys redacted).
-   - Click **Send Issue to GitHub Repo Now** to submit the issue directly to `vaasiraq-art/opencode-studio/issues`.
+   - Click **Send Issue to GitHub Repo Now** to submit the issue directly to `vaasiraq-art/OpenDocFlow/issues`.
 2. **Via GitHub Issues:**
-   - Open [https://github.com/vaasiraq-art/opencode-studio/issues/new/choose](https://github.com/vaasiraq-art/opencode-studio/issues/new/choose) and select **Bug Report** or **Feature Request**.
+   - Open [https://github.com/vaasiraq-art/OpenDocFlow/issues/new/choose](https://github.com/vaasiraq-art/OpenDocFlow/issues/new/choose) and select **Bug Report** or **Feature Request**.
 
 ## How Coders Can Edit & Propose Fixes
 
-1. Fork and clone `https://github.com/vaasiraq-art/opencode-studio.git`.
+1. Fork and clone `https://github.com/vaasiraq-art/OpenDocFlow.git`.
 2. Install local dependencies and test your changes:
    ```bat
    npm install

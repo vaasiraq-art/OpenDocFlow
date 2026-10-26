@@ -21,9 +21,9 @@ window.studioAPI.onBugCaptured((bug) => {
 });
 
 // ============================================================================
-// BLENDER FLOATING BUTTON INFO TOOLTIP + STATUSBAR HOVER HELP
+// FLOATING BUTTON INFO TOOLTIP + STATUSBAR HOVER HELP
 // ============================================================================
-const tooltipEl = document.getElementById('blenderTooltip');
+const tooltipEl = document.getElementById('studioTooltip');
 const statusHoverEl = document.getElementById('statusHoverHelp');
 
 document.addEventListener('mouseover', (e) => {
@@ -58,7 +58,7 @@ document.addEventListener('mouseout', (e) => {
 });
 
 // ============================================================================
-// INTERACTIVE DRAGGABLE BLENDER SHADER NODES + SVG BEZIER NOODLES
+// INTERACTIVE DRAGGABLE ROUTING PIPELINE NODES + SVG BEZIER CONNECTIONS
 // ============================================================================
 const DEFAULT_NODE_POS = {
   n1: { left: 14, top: 20 },
@@ -167,32 +167,39 @@ async function loadSavedNodePositions() {
 }
 
 const TAB_TITLES = {
-  dashboard: 'Blender 3D / Shader Node Viewport — Studio Layout',
-  router: 'Shader Node Editor — AI Routing Combos & Auto-Failover',
+  dashboard: 'AI Agent Gateway & Visual Routing Pipeline',
+  guide: '📘 Complete Step-by-Step User Guide (Beginner to Pro)',
+  router: 'Smart Combo Router & Auto-Failover Chain',
   keys: 'AI Keys, Multi-Key Pool & Live API Key Model Scanner',
   'free-models': 'Ranked Free Coding Models — Best (S+) to Low',
   skills: 'Universal World Skill & Plugin Harvester (Claude, Codex, Cursor, Web)',
   cloud: 'Cloud Sign-In (GitHub / Google) & Cross-PC AES-256 Sync',
   prereqs: 'System & Device Drivers Wizard (OpenCode, Node, ADB, REA, Graphify)',
   bugs: 'Auto Bug Catcher & 1-Click GitHub Issue Reporter',
-  'terminal-tab': 'Scripting & CLI Presets'
+  'terminal-tab': 'CLI Command Presets & External TUI'
 };
 
 function switchTab(tabId) {
-  document.querySelectorAll('.bl-ws-tab').forEach((btn) => {
+  document.querySelectorAll('.st-ws-tab').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
   document.querySelectorAll('.tab-panel').forEach((panel) => {
     panel.classList.toggle('active', panel.id === `tab-${tabId}`);
   });
   const headerLbl = document.getElementById('viewportHeaderLabel');
-  if (headerLbl) headerLbl.textContent = TAB_TITLES[tabId] || 'Studio Viewport';
+  if (headerLbl) headerLbl.textContent = TAB_TITLES[tabId] || 'Studio Workspace';
   if (tabId === 'dashboard') setTimeout(drawNodeBezierWires, 30);
 }
 
-document.querySelectorAll('.bl-ws-tab').forEach((btn) => {
+document.querySelectorAll('.st-ws-tab').forEach((btn) => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
+
+document.querySelectorAll('.guide-jump-btn').forEach((btn) => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.jump));
+});
+
+document.getElementById('btnOpenGuideQuick').addEventListener('click', () => switchTab('guide'));
 
 async function refreshSystemStatus() {
   const st = await window.studioAPI.getSystemStatus();
@@ -237,6 +244,8 @@ function renderPrereqs(prereqs = []) {
   }
 }
 
+let currentlyEditingSkill = null;
+
 function renderPills(plugins = [], mcps = [], skills = []) {
   const pWrap = document.getElementById('pillsPlugins');
   if (pWrap) {
@@ -253,10 +262,19 @@ function renderPills(plugins = [], mcps = [], skills = []) {
   if (sWrap) {
     sWrap.innerHTML = '';
     skills.forEach((sk) => {
-      const s = document.createElement('span');
-      s.className = 'pill';
-      s.textContent = sk;
-      sWrap.appendChild(s);
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.textContent = sk;
+      btn.setAttribute('data-info', `Click to open and edit ${sk}/SKILL.md in the live editor below.`);
+      btn.addEventListener('click', async () => {
+        const res = await window.studioAPI.readSkillOrPluginFile({ kind: 'skill', name: sk });
+        if (res.ok) {
+          currentlyEditingSkill = sk;
+          document.getElementById('lblEditingItem').textContent = `${sk}/SKILL.md`;
+          document.getElementById('txtSkillFileEditor').value = res.content;
+        }
+      });
+      sWrap.appendChild(btn);
     });
   }
 }
@@ -333,24 +351,24 @@ async function refreshProviders() {
       </div>
       <div class="quick-chips">${modelOptions}</div>
       <div class="btn-row" style="margin-top:auto; padding-top:4px;">
-        <button class="bl-btn bl-btn-orange btn-save-prov" data-id="${p.id}" data-name="${p.name}" data-env="${
+        <button class="st-btn st-btn-orange btn-save-prov" data-id="${p.id}" data-name="${p.name}" data-env="${
           p.envKey
         }" data-builtin="${p.builtin}" data-info="Save API key(s) and endpoint for ${p.name}.">
           Save Key
         </button>
-        <button class="bl-btn bl-btn-blue btn-scan-prov" data-id="${p.id}" data-info="Connect with your ${
+        <button class="st-btn st-btn-blue btn-scan-prov" data-id="${p.id}" data-info="Connect with your ${
           p.name
         } key and discover all models unlocked by this key.">
           🔍 Scan Key
         </button>
         ${
           p.keyUrl
-            ? `<button class="bl-btn bl-btn-default btn-get-key" data-url="${p.keyUrl}" data-info="Open ${p.name} dashboard in browser to get an API key.">Get Key</button>`
+            ? `<button class="st-btn st-btn-default btn-get-key" data-url="${p.keyUrl}" data-info="Open ${p.name} dashboard in browser to get an API key.">Get Key</button>`
             : ''
         }
         ${
           p.hasKey
-            ? `<button class="bl-btn bl-btn-danger btn-del-prov" data-id="${p.id}" data-info="Remove saved key(s) for ${p.name}.">Clear</button>`
+            ? `<button class="st-btn st-btn-danger btn-del-prov" data-id="${p.id}" data-info="Remove saved key(s) for ${p.name}.">Clear</button>`
             : ''
         }
       </div>
@@ -460,13 +478,13 @@ async function refreshFreeModels() {
       <div class="model-main">
         <div class="model-title-line">
           <span class="model-name">${m.name}</span>
-          <span class="bl-tag-orange">${m.tierLabel}</span>
+          <span class="st-tag-orange">${m.tierLabel}</span>
           <code class="model-id-code" translate="no">${m.id}</code>
-          <span class="bl-tag">Context: ${m.context}</span>
+          <span class="st-tag">Context: ${m.context}</span>
         </div>
         <div class="model-desc">${m.strengths} — <em>${m.howToUse}</em></div>
       </div>
-      <button class="bl-btn bl-btn-orange use-free-model-btn" data-id="${m.id}" data-info="Set ${m.id} as your active OpenCode coding model.">Use Model</button>
+      <button class="st-btn st-btn-orange use-free-model-btn" data-id="${m.id}" data-info="Set ${m.id} as your active OpenCode coding model.">Use Model</button>
     `;
     curatedEl.appendChild(row);
   }
@@ -483,12 +501,12 @@ async function refreshFreeModels() {
         <div class="model-main">
           <div class="model-title-line">
             <span class="model-name">${m.name}</span>
-            <span class="bl-tag-orange">$0 FREE</span>
+            <span class="st-tag-orange">$0 FREE</span>
             <code class="model-id-code" translate="no">${m.id}</code>
-            <span class="bl-tag">Context: ${m.context}</span>
+            <span class="st-tag">Context: ${m.context}</span>
           </div>
         </div>
-        <button class="bl-btn bl-btn-blue use-free-model-btn" data-id="${m.id}" data-info="Activate live free model ${m.id}.">Use Model</button>
+        <button class="st-btn st-btn-blue use-free-model-btn" data-id="${m.id}" data-info="Activate live free model ${m.id}.">Use Model</button>
       `;
       liveEl.appendChild(row);
     });
@@ -532,7 +550,13 @@ async function refreshCloudAccount() {
         <div>
           <strong style="color:#5fb878;">Signed in via ${acct.provider.toUpperCase()} as ${acct.displayName} (@${acct.username})</strong>
           <div style="font-size:11px; color:#9d9d9d; margin-top:2px;">
-            ${acct.gistId ? `Secret Gist ID: <code>${acct.gistId}</code>` : acct.syncFolder ? `Sync Folder: <code>${acct.syncFolder}</code>` : 'Ready to push first cloud snapshot'}
+            ${
+              acct.gistId
+                ? `Secret Gist ID: <code>${acct.gistId}</code>`
+                : acct.syncFolder
+                ? `Sync Folder: <code>${acct.syncFolder}</code>`
+                : 'Ready to push first cloud snapshot'
+            }
             ${acct.lastSyncedAt ? ` • Last Synced: ${acct.lastSyncedAt}` : ''}
           </div>
         </div>
@@ -569,12 +593,12 @@ async function refreshBugReports() {
       <div class="model-main">
         <div class="model-title-line">
           <span class="model-name">${r.title}</span>
-          <span class="bl-tag">${r.source}</span>
-          <span class="bl-tag">${r.ts}</span>
+          <span class="st-tag">${r.source}</span>
+          <span class="st-tag">${r.ts}</span>
         </div>
         <div class="model-desc">${String(r.detail || '').slice(0, 140)}…</div>
       </div>
-      <button class="bl-btn bl-btn-orange btn-send-captured-bug" data-id="${r.id}">Send to GitHub</button>
+      <button class="st-btn st-btn-orange btn-send-captured-bug" data-id="${r.id}">Send to GitHub</button>
     `;
     row.querySelector('.btn-send-captured-bug').addEventListener('click', async () => {
       document.getElementById('inpBugTitle').value = r.title;
@@ -634,7 +658,7 @@ async function runStartupCheck(forceShow = false) {
 
   title.textContent = up.updatesAvailable
     ? 'Updates Available for Your OpenCode Setup!'
-    : 'OpenCode Studio Startup Update & Driver Check';
+    : 'OpenDocFlow Startup Update & Driver Check';
 
   body.innerHTML = `
     <div>Would you like to update your OpenCode plugins, REA MCP server, Graphify, or install any missing apps/drivers?</div>
@@ -841,6 +865,199 @@ document.getElementById('btnInstallUniversalPlugin').addEventListener('click', a
   await refreshSystemStatus();
 });
 
+document.getElementById('btnBulkImportSkills').addEventListener('click', async () => {
+  const urlsText = document.getElementById('txtBulkSkillUrls').value.trim();
+  if (!urlsText) return;
+  appendTerm('\n[Bulk importing multiple skill URLs…]\n');
+  const res = await window.studioAPI.bulkImportSkillUrls(urlsText);
+  if (res.ok) {
+    document.getElementById('txtBulkSkillUrls').value = '';
+    await refreshSystemStatus();
+  }
+});
+
+document.getElementById('btnSaveEditedSkill').addEventListener('click', async () => {
+  if (!currentlyEditingSkill) {
+    appendTerm('\n[Click any skill pill above first to load its SKILL.md into the editor.]\n');
+    return;
+  }
+  const content = document.getElementById('txtSkillFileEditor').value;
+  await window.studioAPI.saveSkillOrPluginFile({
+    kind: 'skill',
+    name: currentlyEditingSkill,
+    content
+  });
+  appendTerm(`\n[Saved changes to ${currentlyEditingSkill}/SKILL.md]\n`);
+});
+
+// MCP Manager, Custom Agents, Slash Commands & Raw Config Studio
+async function refreshMcpAndAgentsStudio() {
+  const [mcps, agCmds, rawCfg] = await Promise.all([
+    window.studioAPI.getMcpServers(),
+    window.studioAPI.getAgentsAndCommands(),
+    window.studioAPI.getRawConfigs()
+  ]);
+
+  const mcpList = document.getElementById('mcpServersList');
+  if (mcpList) {
+    mcpList.innerHTML = '';
+    for (const m of mcps || []) {
+      const row = document.createElement('div');
+      row.className = 'model-row';
+      row.innerHTML = `
+        <div class="model-main">
+          <div class="model-title-line">
+            <span class="model-name">${m.name}</span>
+            <span class="st-tag">${m.type}</span>
+            <span class="status-badge ${m.enabled ? 'ok' : 'missing'}">${m.enabled ? 'Enabled' : 'Disabled'}</span>
+          </div>
+          <div class="model-desc"><code translate="no">${m.command}</code></div>
+        </div>
+        <div class="btn-row">
+          <button class="st-btn ${m.enabled ? 'st-btn-default' : 'st-btn-blue'} btn-toggle-mcp" data-name="${m.name}" data-enabled="${!m.enabled}">
+            ${m.enabled ? 'Disable' : 'Enable'}
+          </button>
+          <button class="st-btn st-btn-danger btn-del-mcp" data-name="${m.name}">Delete</button>
+        </div>
+      `;
+      row.querySelector('.btn-toggle-mcp').addEventListener('click', async (e) => {
+        await window.studioAPI.toggleMcpServer({
+          name: e.currentTarget.dataset.name,
+          enabled: e.currentTarget.dataset.enabled === 'true'
+        });
+        await refreshMcpAndAgentsStudio();
+        await refreshSystemStatus();
+      });
+      row.querySelector('.btn-del-mcp').addEventListener('click', async (e) => {
+        await window.studioAPI.removeMcpServer(e.currentTarget.dataset.name);
+        await refreshMcpAndAgentsStudio();
+        await refreshSystemStatus();
+      });
+      mcpList.appendChild(row);
+    }
+  }
+
+  const acList = document.getElementById('agentsCommandsList');
+  if (acList && agCmds) {
+    acList.innerHTML = '';
+    for (const a of agCmds.agents || []) {
+      const row = document.createElement('div');
+      row.className = 'model-row';
+      row.innerHTML = `
+        <div class="model-main">
+          <div class="model-title-line">
+            <span class="model-name">Agent: @${a.id}</span>
+            <span class="st-tag-orange">${a.mode}</span>
+            ${a.model ? `<code class="model-id-code">${a.model}</code>` : ''}
+          </div>
+          <div class="model-desc">${a.system || a.description}</div>
+        </div>
+        <button class="st-btn st-btn-danger btn-del-agent" data-id="${a.id}">Delete</button>
+      `;
+      row.querySelector('.btn-del-agent').addEventListener('click', async () => {
+        await window.studioAPI.deleteCustomAgent(a.id);
+        await refreshMcpAndAgentsStudio();
+      });
+      acList.appendChild(row);
+    }
+    for (const c of agCmds.commands || []) {
+      const row = document.createElement('div');
+      row.className = 'model-row';
+      row.innerHTML = `
+        <div class="model-main">
+          <div class="model-title-line">
+            <span class="model-name">Command: /${c.id}</span>
+            <span class="st-tag">Slash Command</span>
+          </div>
+          <div class="model-desc">${c.template}</div>
+        </div>
+        <button class="st-btn st-btn-danger btn-del-cmd" data-id="${c.id}">Delete</button>
+      `;
+      row.querySelector('.btn-del-cmd').addEventListener('click', async () => {
+        await window.studioAPI.deleteCustomCommand(c.id);
+        await refreshMcpAndAgentsStudio();
+      });
+      acList.appendChild(row);
+    }
+  }
+
+  if (rawCfg) {
+    document.getElementById('txtRawOpencode').value = rawCfg.opencodeJsonc || '';
+    document.getElementById('txtRawCli').value = rawCfg.cliJson || '';
+    document.getElementById('txtRawAgentsMd').value = rawCfg.agentsMd || '';
+  }
+}
+
+document.getElementById('btnAddMcpServer').addEventListener('click', async () => {
+  const name = document.getElementById('inpMcpName').value.trim();
+  const commandOrUrl = document.getElementById('inpMcpCmd').value.trim();
+  if (!name || !commandOrUrl) return;
+  await window.studioAPI.addMcpServer({ name, commandOrUrl });
+  document.getElementById('inpMcpName').value = '';
+  document.getElementById('inpMcpCmd').value = '';
+  appendTerm(`\n[Added MCP Server: ${name}]\n`);
+  await refreshMcpAndAgentsStudio();
+  await refreshSystemStatus();
+});
+
+document.getElementById('btnSaveCustomAgent').addEventListener('click', async () => {
+  const id = document.getElementById('inpAgentId').value.trim();
+  const model = document.getElementById('inpAgentModel').value.trim();
+  const system = document.getElementById('inpAgentSystem').value.trim();
+  const readOnly = document.getElementById('chkAgentReadOnly').checked;
+  if (!id) return;
+  await window.studioAPI.saveCustomAgent({ id, model, system, readOnly, mode: 'subagent' });
+  appendTerm(`\n[Saved Custom Agent @${id}]\n`);
+  await refreshMcpAndAgentsStudio();
+});
+
+document.getElementById('btnSaveCustomCommand').addEventListener('click', async () => {
+  const id = document.getElementById('inpCmdId').value.trim();
+  const template = document.getElementById('inpCmdTemplate').value.trim();
+  if (!id || !template) return;
+  await window.studioAPI.saveCustomCommand({ id, template });
+  appendTerm(`\n[Saved Custom Slash Command /${id}]\n`);
+  await refreshMcpAndAgentsStudio();
+});
+
+document.getElementById('btnSaveRawConfigs').addEventListener('click', async () => {
+  await window.studioAPI.saveRawConfigs({
+    opencodeJsonc: document.getElementById('txtRawOpencode').value,
+    cliJson: document.getElementById('txtRawCli').value,
+    agentsMd: document.getElementById('txtRawAgentsMd').value
+  });
+  appendTerm('\n[Saved opencode.jsonc, cli.json, and AGENTS.md]\n');
+  await refreshSystemStatus();
+});
+
+async function refreshProfilesList() {
+  const profiles = (await window.studioAPI.getProfiles()) || [];
+  const wrap = document.getElementById('profilesListPills');
+  if (!wrap) return;
+  wrap.innerHTML = profiles
+    .map(
+      (p) =>
+        `<button class="chip profile-switch-chip" data-name="${p}" data-info="Click to switch your active OpenCode environment to profile '${p}'.">Switch: ${p}</button>`
+    )
+    .join('');
+  wrap.querySelectorAll('.profile-switch-chip').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await window.studioAPI.switchProfile(btn.dataset.name);
+      appendTerm(`\n[Switched active OpenCode Profile to: ${btn.dataset.name}]\n`);
+      await Promise.all([refreshSystemStatus(), refreshFallbackChain(), refreshMcpAndAgentsStudio()]);
+    });
+  });
+}
+
+document.getElementById('btnSaveProfileNow').addEventListener('click', async () => {
+  const name = document.getElementById('inpProfileName').value.trim();
+  if (!name) return;
+  await window.studioAPI.saveProfileSnapshot(name);
+  document.getElementById('inpProfileName').value = '';
+  appendTerm(`\n[Saved isolated OpenCode Profile: ${name}]\n`);
+  await refreshProfilesList();
+});
+
 // Cloud Sign-In & Sync Listeners
 document.getElementById('btnSignInGitHub').addEventListener('click', async () => {
   const token = document.getElementById('inpCloudGithubToken').value.trim();
@@ -966,12 +1183,12 @@ document.getElementById('btnClearCacheSmall').addEventListener('click', async ()
 });
 
 document.getElementById('btnOpenGitHubRepo').addEventListener('click', () => {
-  window.studioAPI.openExternalUrl('https://github.com/vaasiraq-art/opencode-studio');
+  window.studioAPI.openExternalUrl('https://github.com/vaasiraq-art/OpenDocFlow');
 });
 
 // Bug Reporter controls
 document.getElementById('btnSubmitGitHubIssue').addEventListener('click', async () => {
-  const title = document.getElementById('inpBugTitle').value.trim() || 'Bug Report from OpenCode Studio v3.0';
+  const title = document.getElementById('inpBugTitle').value.trim() || 'Bug Report from OpenDocFlow v3.1';
   const description = document.getElementById('inpBugDesc').value.trim();
   const steps = document.getElementById('inpBugSteps').value.trim();
   const res = await window.studioAPI.reportBugToGitHub({ title, description, steps });
@@ -979,7 +1196,7 @@ document.getElementById('btnSubmitGitHubIssue').addEventListener('click', async 
 });
 
 document.getElementById('btnOpenRepoIssuesPage').addEventListener('click', () => {
-  window.studioAPI.openExternalUrl('https://github.com/vaasiraq-art/opencode-studio/issues');
+  window.studioAPI.openExternalUrl('https://github.com/vaasiraq-art/OpenDocFlow/issues');
 });
 
 document.getElementById('btnClearBugLogs').addEventListener('click', async () => {
@@ -1043,6 +1260,8 @@ document.getElementById('btnToggleDock').addEventListener('click', () => {
     refreshGatewayTelemetry(),
     refreshCloudAccount(),
     refreshBugReports(),
+    refreshMcpAndAgentsStudio(),
+    refreshProfilesList(),
     loadSavedNodePositions()
   ]);
   refreshFreeModels();

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or error in OpenCode Studio so vaasiraq-art can fix and deploy it
+description: Report a bug or error in OpenDocFlow so vaasiraq-art can fix and deploy it
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -7,12 +7,12 @@ body:
     attributes:
       value: |
         Thank you for reporting this bug! **vaasiraq-art** reviews all submitted issues for the next official deployment.
-        *(Tip: You can also send bug reports automatically from the **Bug Reporter** tab inside OpenCode Studio!)*
+        *(Tip: You can also send bug reports automatically from the **Bug Reporter** tab inside OpenDocFlow!)*
   - type: input
     id: version
     attributes:
-      label: OpenCode Studio Version & OS
-      description: Which version of OpenCode Studio and Windows are you running?
+      label: OpenDocFlow Version & OS
+      description: Which version of OpenDocFlow and Windows are you running?
       placeholder: "v2.0.0 on Windows 11 x64"
     validations:
       required: true

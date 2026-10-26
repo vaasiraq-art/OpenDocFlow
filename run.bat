@@ -1,3 +1,3 @@
 @echo off
 setlocal
-start "" "%~dp0dist\win-unpacked\OpenCode Studio.exe"
+start "" "%~dp0dist\win-unpacked\OpenDocFlow.exe"

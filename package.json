@@ -1,15 +1,15 @@
 {
-  "name": "opencode-studio",
-  "version": "3.0.0",
-  "description": "OpenCode Studio v3.0 - Blender 3D UI, Streaming Multi-Protocol AI Gateway, Key Pool & Live Model Scanner",
+  "name": "opendocflow",
+  "version": "3.2.0",
+  "description": "OpenDocFlow v3.2 - Complete AI Agent Gateway, MCP Manager, Agents/Commands Studio, Profiles, Bulk Skill/Plugin Editor & Key Scanner",
   "author": "vaasiraq-art",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vaasiraq-art/opencode-studio.git"
+    "url": "https://github.com/vaasiraq-art/OpenDocFlow.git"
   },
   "bugs": {
-    "url": "https://github.com/vaasiraq-art/opencode-studio/issues"
+    "url": "https://github.com/vaasiraq-art/OpenDocFlow/issues"
   },
   "main": "main.js",
   "scripts": {
@@ -24,10 +24,18 @@
     "electron-builder": "^26.18.0"
   },
   "build": {
-    "appId": "com.opencodestudio.desktop",
-    "productName": "OpenCode Studio",
+    "appId": "com.opendocflow.desktop",
+    "productName": "OpenDocFlow",
     "asar": true,
     "compression": "store",
+    "protocols": [
+      {
+        "name": "OpenDocFlow Deep Link",
+        "schemes": [
+          "opendocflow"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist"
     },
@@ -65,7 +73,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "OpenCode Studio",
+      "shortcutName": "OpenDocFlow",
       "license": "build/PREREQUISITES.txt",
       "runAfterFinish": true
     }
