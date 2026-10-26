@@ -4,41 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#181818" />
-  <title>OpenCode Studio v2.0 — Blender Workspace & Smart AI Gateway</title>
+  <title>OpenCode Studio v3.0 — Blender 3D AI Gateway, Key Pool &amp; World Agent Hub</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="blender-shell">
-    <!-- BLENDER TOPBAR (Workspaces + Scene Status) -->
+    <!-- BLENDER TOPBAR (Workspaces + Cloud Account + Scene Status) -->
     <header class="bl-topbar">
       <div class="bl-topbar-left">
-        <div class="bl-app-badge" title="OpenCode Studio v2.0">
+        <div class="bl-app-badge" data-info="OpenCode Studio v3.0 Flagship — Blender 3D Workspace, Streaming Gateway, Multi-Key Pool &amp; Universal Skill Harvester.">
           <span class="bl-logo-dot" aria-hidden="true"></span>
           <span translate="no">OpenCode Studio</span>
-          <span class="bl-ver-tag">2.0</span>
+          <span class="bl-ver-tag">3.0</span>
         </div>
 
-        <nav class="bl-workspaces" aria-label="Workspaces">
-          <button class="bl-ws-tab active" data-tab="dashboard">Layout</button>
-          <button class="bl-ws-tab" data-tab="router">Node Router</button>
-          <button class="bl-ws-tab" data-tab="keys">AI Keys</button>
-          <button class="bl-ws-tab" data-tab="free-models">Free Models (Best → Low)</button>
-          <button class="bl-ws-tab" data-tab="skills">Skills &amp; Plugins</button>
-          <button class="bl-ws-tab" data-tab="prereqs">Apps &amp; Drivers</button>
-          <button class="bl-ws-tab" data-tab="bugs">
+        <nav class="bl-workspaces" aria-label="Blender Workspaces">
+          <button class="bl-ws-tab active" data-tab="dashboard" data-info="Layout Workspace: Overview of your 3D/Node pipeline, quick project creator, and universal model switcher.">Layout</button>
+          <button class="bl-ws-tab" data-tab="router" data-info="Interactive Shader Node Router: Drag nodes with your mouse, view live bezier connections, and edit the Auto-Fallback Free Model chain.">3D Node Router</button>
+          <button class="bl-ws-tab" data-tab="keys" data-info="AI Keys &amp; Live Model Scanner: Paste 1 or multiple API keys (Key Pool) and click Scan Key Models to read all models unlocked by your key.">AI Keys &amp; Scanner</button>
+          <button class="bl-ws-tab" data-tab="free-models" data-info="Ranked Free Coding Models: S+ to B tier free coding models plus live $0 models from OpenRouter.">Free Models (Best → Low)</button>
+          <button class="bl-ws-tab" data-tab="skills" data-info="Universal World Skill &amp; Plugin Harvester: Import skills from Claude Code, Codex, Cursor, GitHub, or any website.">World Skills &amp; Plugins</button>
+          <button class="bl-ws-tab" data-tab="cloud" data-info="Cloud Sign-In &amp; Sync: Sign in with GitHub or Google Drive to save your work and encrypted keys and open them on another PC.">Cloud Sync</button>
+          <button class="bl-ws-tab" data-tab="prereqs" data-info="Apps &amp; Drivers Wizard: Check and install OpenCode V2, Node.js, Git, Python/uv, Graphify, REA 6.8.0, and Android ADB USB drivers.">Apps &amp; Drivers</button>
+          <button class="bl-ws-tab" data-tab="bugs" data-info="Auto Bug Catcher &amp; GitHub Issue Sender: View auto-captured errors and send issues directly to GitHub so they can be fixed and deployed.">
             Bug Reporter <span id="bugCountBadge" class="bl-badge-count">0</span>
           </button>
-          <button class="bl-ws-tab" data-tab="terminal-tab">Scripting</button>
+          <button class="bl-ws-tab" data-tab="terminal-tab" data-info="Scripting &amp; Terminal Presets: Run CLI commands or pop out a full-screen OpenCode TUI window.">Scripting</button>
         </nav>
       </div>
 
       <div class="bl-topbar-right">
-        <div class="bl-scene-pill" title="Local Smart AI Gateway Endpoint">
+        <button id="btnCloudTopPill" class="bl-scene-pill clickable-pill" data-info="Click to open Cloud Sign-In (GitHub / Google) to sync your workspace across PCs.">
+          <span id="cloudDot" class="status-dot" aria-hidden="true"></span>
+          <span id="cloudTopLabel">Sign In (GitHub / Google)</span>
+        </button>
+        <div class="bl-scene-pill" data-info="Built-in Streaming AI Gateway running locally on port 4141 (supports OpenAI /v1/chat/completions &amp; Anthropic /v1/messages).">
           <span class="status-dot online" aria-hidden="true"></span>
-          <span translate="no" id="topGatewayText">Gateway: 127.0.0.1:4141/v1</span>
+          <span translate="no" id="topGatewayText">:4141/v1 ONLINE</span>
         </div>
-        <button id="btnCheckUpdatesTop" class="bl-btn bl-btn-default">Check Updates</button>
-        <button id="btnLaunchOpenCode" class="bl-btn bl-btn-orange">Launch OpenCode TUI</button>
+        <button id="btnCheckUpdatesTop" class="bl-btn bl-btn-default" data-info="Check npm registry and local environment for updates to OpenCode, REA 6.8.0, Plugins, and Skills.">Check Updates</button>
+        <button id="btnLaunchOpenCode" class="bl-btn bl-btn-orange" data-info="Open a dedicated PowerShell window running the interactive OpenCode V2 TUI.">Launch OpenCode TUI</button>
       </div>
     </header>
 
@@ -48,53 +53,56 @@
       <aside class="bl-outliner" aria-label="Scene Outliner and Quick Tools">
         <div class="bl-area-header">
           <span class="bl-area-icon" aria-hidden="true">▤</span>
-          <span>Outliner &amp; Quick Shelf</span>
+          <span>Outliner &amp; Tool Shelf</span>
         </div>
 
         <div class="bl-outliner-tree">
           <div class="bl-tree-group">
             <div class="bl-tree-header">▾ Scene Collection</div>
-            <div class="bl-tree-item">
+            <div class="bl-tree-item" data-info="Currently active AI model or gateway combo in OpenCode.">
               <span class="tree-key">Active Model</span>
               <span id="sidebarActiveModel" class="tree-val" translate="no">Loading…</span>
             </div>
-            <div class="bl-tree-item">
+            <div class="bl-tree-item" data-info="Installed OpenCode V2 CLI status.">
               <span class="tree-key">OpenCode CLI</span>
               <span id="statOpenCode" class="tree-val">Checking…</span>
             </div>
-            <div class="bl-tree-item">
+            <div class="bl-tree-item" data-info="Number of active OpenCode V2 plugins configured.">
               <span class="tree-key">V2 Plugins</span>
               <span id="statPlugins" class="tree-val">0</span>
             </div>
-            <div class="bl-tree-item">
+            <div class="bl-tree-item" data-info="Total global agent skills installed across OpenCode and .agents/skills.">
               <span class="tree-key">Global Skills</span>
               <span id="statSkills" class="tree-val">0</span>
             </div>
-            <div class="bl-tree-item">
+            <div class="bl-tree-item" data-info="Configured Model Context Protocol servers (including REA 6.8.0).">
               <span class="tree-key">MCP Servers</span>
               <span id="statMcp" class="tree-val">0</span>
             </div>
           </div>
 
           <div class="bl-tree-group">
-            <div class="bl-tree-header">▾ Quick Operators</div>
+            <div class="bl-tree-header">▾ 1-Click Studio Operators</div>
             <div class="bl-shelf-buttons">
-              <button id="btnConnectGatewayQuick" class="bl-btn bl-btn-orange full-width">
+              <button id="btnConnectGatewayQuick" class="bl-btn bl-btn-orange full-width" data-info="Connects OpenCode V2 directly to the built-in Smart Streaming Gateway (http://127.0.0.1:4141/v1) with 3-Layer Auto-Failover.">
                 ⚡ Use Smart Gateway in OpenCode
               </button>
-              <button id="btnRotateNextFreeSidebar" class="bl-btn bl-btn-blue full-width">
+              <button id="btnConnectAllIdes" class="bl-btn bl-btn-blue full-width" data-info="Configures OpenCode V2 AND generates a universal gateway profile for Claude Code, Codex, Cursor, Cline, and Aider.">
+                🔗 Connect All IDEs (:4141/v1)
+              </button>
+              <button id="btnRotateNextFreeSidebar" class="bl-btn bl-btn-default full-width" data-info="Immediately switches your active model to the next free coding model in your fallback chain.">
                 ↻ Switch Next Free Model Now
               </button>
-              <button id="btnRestoreAllTop" class="bl-btn bl-btn-default full-width">
+              <button id="btnRestoreAllTop" class="bl-btn bl-btn-default full-width" data-info="Restores all bundled plugins, skills, Graphify, and REA 6.8.0 from the portable setup kit.">
                 Restore All Skills &amp; Plugins
               </button>
-              <button id="btnSnapshotKitTop" class="bl-btn bl-btn-default full-width">
+              <button id="btnSnapshotKitTop" class="bl-btn bl-btn-default full-width" data-info="Saves your current plugins, skills, and portable config into the setup-kit folder for another PC.">
                 Save Setup to Portable Kit
               </button>
-              <button id="btnCreateShortcut" class="bl-btn bl-btn-default full-width">
+              <button id="btnCreateShortcut" class="bl-btn bl-btn-default full-width" data-info="Creates the OpenCode Studio shortcut icon on your Windows Desktop.">
                 Create Desktop Shortcut
               </button>
-              <button id="btnQuickReportBug" class="bl-btn bl-btn-danger full-width">
+              <button id="btnQuickReportBug" class="bl-btn bl-btn-danger full-width" data-info="Opens the Bug Reporter tab to send an auto-redacted issue to github.com/vaasiraq-art/opencode-studio/issues.">
                 🐞 Report Bug to GitHub Repo
               </button>
             </div>
@@ -102,65 +110,97 @@
         </div>
       </aside>
 
-      <!-- CENTER VIEWPORT (Tabs Switch Content) -->
+      <!-- CENTER 3D / NODE VIEWPORT -->
       <main class="bl-viewport">
         <div class="bl-viewport-header">
           <div class="bl-vp-title">
             <span class="bl-area-icon" aria-hidden="true">⊞</span>
-            <span id="viewportHeaderLabel">3D / Node Viewport — Studio Layout</span>
+            <span id="viewportHeaderLabel">Blender 3D / Shader Node Viewport — Studio Layout</span>
           </div>
           <div class="bl-vp-actions">
-            <button id="btnQuickUpdateAll" class="bl-btn bl-btn-default">Update All Components</button>
-            <button id="btnQuickPrereqModal" class="bl-btn bl-btn-default">Apps &amp; Drivers Wizard</button>
+            <button id="btnQuickScanKeyJump" class="bl-btn bl-btn-blue" data-info="Jump to AI Keys &amp; Live Model Scanner to paste an API key and read all models inside it.">🔍 Scan API Key Models</button>
+            <button id="btnQuickUpdateAll" class="bl-btn bl-btn-default" data-info="Updates OpenCode plugins, Graphify, and REA 6.8.0 to the latest versions.">Update All Components</button>
+            <button id="btnQuickPrereqModal" class="bl-btn bl-btn-default" data-info="Open the Apps &amp; Drivers Wizard to install missing runtimes or Android ADB drivers.">Apps &amp; Drivers Wizard</button>
           </div>
         </div>
 
         <div class="bl-viewport-content">
           <!-- TAB 1: LAYOUT / DASHBOARD -->
           <section id="tab-dashboard" class="tab-panel active">
-            <!-- Visual Node Preview Banner -->
-            <div class="bl-node-canvas compact-canvas">
+            <!-- Interactive Draggable Blender 3D Shader Node Canvas -->
+            <div id="interactiveNodeCanvas" class="bl-node-canvas">
               <div class="bl-canvas-overlay-title">
-                <span>LIVE SMART ROUTING PIPELINE (BETTER THAN OMNIROUTE • 0ms NATIVE GATEWAY)</span>
-                <span class="bl-tag-orange">3-Layer Self-Healing Active</span>
+                <span>BLENDER 3D SHADER-NODE ROUTER (DRAG NODES WITH MOUSE • REAL-TIME SSE STREAMING + KEY POOL)</span>
+                <div class="btn-row">
+                  <span class="bl-tag-orange">OpenAI + Anthropic Wire Protocols</span>
+                  <button id="btnResetNodePositions" class="bl-btn bl-btn-default" style="padding:2px 7px; font-size:10.5px;" data-info="Reset all draggable shader nodes to their default Blender layout positions.">Reset Nodes</button>
+                </div>
               </div>
-              <div class="bl-node-flow">
-                <div class="bl-node node-input">
-                  <div class="bl-node-head head-blue">Client Input</div>
+
+              <!-- Blender 3D Axis Navigation Gizmo (X Red, Y Green, Z Blue) -->
+              <div class="bl-3d-gizmo" title="Blender 3D Viewport Axis Gizmo (X / Y / Z)" data-info="Blender 3D Viewport Navigation Gizmo — Drag any shader node on the grid canvas to customize your routing layout.">
+                <span class="gizmo-axis axis-x">X</span>
+                <span class="gizmo-axis axis-y">Y</span>
+                <span class="gizmo-axis axis-z">Z</span>
+              </div>
+
+              <div id="nodeGraphStage" class="bl-node-stage">
+                <svg id="nodeWiresSvg" class="bl-wires-svg" aria-hidden="true"></svg>
+
+                <div class="bl-node draggable-node" data-node-id="n1" style="left: 16px; top: 24px;">
+                  <div class="bl-node-head head-blue">
+                    <span>● IDE / Agent Input</span>
+                    <span class="socket-out" aria-hidden="true"></span>
+                  </div>
                   <div class="bl-node-body">
-                    <div class="node-row"><span>Endpoint</span><code translate="no">:4141/v1</code></div>
-                    <div class="node-row"><span>OpenCode V2</span><span class="ok-txt">Connected</span></div>
+                    <div class="node-row"><span>Gateway</span><code translate="no">:4141/v1</code></div>
+                    <div class="node-row"><span>Protocols</span><span class="ok-txt">OpenAI + Claude</span></div>
+                    <div class="node-row"><span>Streaming</span><span class="ok-txt">SSE Live</span></div>
                   </div>
                 </div>
-                <div class="bl-noodle" aria-hidden="true"></div>
-                <div class="bl-node node-modifier">
-                  <div class="bl-node-head head-purple">Token Optimizer</div>
+
+                <div class="bl-node draggable-node" data-node-id="n2" style="left: 235px; top: 24px;">
+                  <div class="bl-node-head head-purple">
+                    <span class="socket-in" aria-hidden="true"></span>
+                    <span>Token &amp; Cache Node</span>
+                    <span class="socket-out" aria-hidden="true"></span>
+                  </div>
                   <div class="bl-node-body">
-                    <div class="node-row"><span>ANSI/Log Strip</span><span class="ok-txt">ON</span></div>
+                    <div class="node-row"><span>Token Strip</span><span class="ok-txt">-15% to -70%</span></div>
                     <div class="node-row"><span>Saved Tokens</span><span id="nodeTokensSaved" class="num-val">0</span></div>
+                    <div class="node-row"><span>Cache Hits</span><span id="nodeCacheHits" class="num-val">0</span></div>
                   </div>
                 </div>
-                <div class="bl-noodle" aria-hidden="true"></div>
-                <div class="bl-node node-shader">
-                  <div class="bl-node-head head-orange">Smart Combo Router</div>
+
+                <div class="bl-node draggable-node" data-node-id="n3" style="left: 460px; top: 24px;">
+                  <div class="bl-node-head head-orange">
+                    <span class="socket-in" aria-hidden="true"></span>
+                    <span>Smart Combo Router</span>
+                    <span class="socket-out" aria-hidden="true"></span>
+                  </div>
                   <div class="bl-node-body">
                     <div class="node-row"><span>Strategy</span><code id="nodeStrategyLabel">smart-coding</code></div>
                     <div class="node-row"><span>Failovers</span><span id="nodeFailoversCount" class="num-val">0</span></div>
+                    <div class="node-row"><span>Avg Latency</span><span id="nodeAvgLatency" class="num-val">0 ms</span></div>
                   </div>
                 </div>
-                <div class="bl-noodle" aria-hidden="true"></div>
-                <div class="bl-node node-output">
-                  <div class="bl-node-head head-green">Free Tier Pool (Auto-Switch)</div>
+
+                <div class="bl-node draggable-node" data-node-id="n4" style="left: 690px; top: 18px;">
+                  <div class="bl-node-head head-green">
+                    <span class="socket-in" aria-hidden="true"></span>
+                    <span>20+ Provider Pool (Auto-Switch)</span>
+                  </div>
                   <div class="bl-node-body">
-                    <div class="node-row"><span>#1 Gemini 2.5 Pro</span><span class="ok-txt">Ready</span></div>
-                    <div class="node-row"><span>#2 Qwen3 Coder 480B</span><span class="ok-txt">Ready</span></div>
-                    <div class="node-row"><span>#3 DeepSeek R1 / Local</span><span class="ok-txt">Fallback</span></div>
+                    <div class="node-row"><span>#1 Gemini 2.5 Pro</span><span class="ok-txt">1M Free</span></div>
+                    <div class="node-row"><span>#2 Qwen3 Coder 480B</span><span class="ok-txt">Free Pool</span></div>
+                    <div class="node-row"><span>#3 Kimi K2 / DeepSeek R1</span><span class="ok-txt">Free Pool</span></div>
+                    <div class="node-row"><span>#4 Local Ollama</span><span class="ok-txt">Offline Guard</span></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="two-col" style="margin-top: 14px;">
+            <div class="two-col" style="margin-top: 12px;">
               <div class="bl-panel">
                 <div class="bl-panel-header">
                   <span>▾ New Project + Session Skill Finder</span>
@@ -171,7 +211,7 @@
                     <label for="inpProjectPath">Project Folder Path (C:, D:, E:, F:)</label>
                     <div class="input-group">
                       <input id="inpProjectPath" name="projectPath" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Projects\my-new-app…" />
-                      <button id="btnPickProjectDir" class="bl-btn bl-btn-default">Browse…</button>
+                      <button id="btnPickProjectDir" class="bl-btn bl-btn-default" data-info="Browse your computer drives (C:, D:, E:, F:) to select or create a project folder.">Browse…</button>
                     </div>
                   </div>
                   <div class="form-row">
@@ -179,8 +219,8 @@
                     <input id="inpProjectSkill" name="projectSkill" type="text" autocomplete="off" placeholder="e.g. godot, react, android, python, nextjs…" />
                   </div>
                   <div class="btn-row">
-                    <button id="btnCreateProjectNow" class="bl-btn bl-btn-orange">Create Project &amp; Find Skill</button>
-                    <button id="btnOpenProjectTerminal" class="bl-btn bl-btn-default">Open in OpenCode</button>
+                    <button id="btnCreateProjectNow" class="bl-btn bl-btn-orange" data-info="Creates the project folder, adds Graphify + Free-Model Auto-Switch hooks, and searches for your requested skill.">Create Project &amp; Find Skill</button>
+                    <button id="btnOpenProjectTerminal" class="bl-btn bl-btn-default" data-info="Opens OpenCode TUI directly inside the selected project folder.">Open in OpenCode</button>
                   </div>
                 </div>
               </div>
@@ -195,90 +235,102 @@
                     <label for="inpQuickModel">Active Model or Combo ID (<code>provider/model-id</code>)</label>
                     <div class="input-group">
                       <input id="inpQuickModel" name="quickModel" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. google/gemini-2.5-pro or studio-gateway/auto-coding…" />
-                      <button id="btnSaveQuickModel" class="bl-btn bl-btn-blue">Set Active Model</button>
+                      <button id="btnSaveQuickModel" class="bl-btn bl-btn-blue" data-info="Saves this provider/model ID as your default model in opencode.jsonc.">Set Active Model</button>
                     </div>
                   </div>
                   <div class="quick-chips">
-                    <button class="chip" data-model="studio-gateway/auto-coding">⚡ studio-gateway/auto-coding</button>
-                    <button class="chip" data-model="google/gemini-2.5-pro">google/gemini-2.5-pro</button>
-                    <button class="chip" data-model="openrouter/qwen/qwen3-coder:free">qwen3-coder:free</button>
-                    <button class="chip" data-model="openrouter/deepseek/deepseek-r1:free">deepseek-r1:free</button>
-                    <button class="chip" data-model="cerebras/qwen-3-coder-480b">cerebras/qwen-3-coder-480b</button>
-                    <button class="chip" data-model="ollama/qwen2.5-coder:14b">ollama/qwen2.5-coder:14b</button>
+                    <button class="chip" data-model="studio-gateway/auto-coding" data-info="Route through the local Smart Gateway (:4141/v1) with automatic failover across all your keys.">⚡ studio-gateway/auto-coding</button>
+                    <button class="chip" data-model="google/gemini-2.5-pro" data-info="Switch to Google Gemini 2.5 Pro (1M context window).">google/gemini-2.5-pro</button>
+                    <button class="chip" data-model="openrouter/qwen/qwen3-coder:free" data-info="Switch to Qwen 3 Coder 480B Free on OpenRouter.">qwen3-coder:free</button>
+                    <button class="chip" data-model="openrouter/moonshotai/kimi-k2:free" data-info="Switch to Moonshot Kimi K2 Free on OpenRouter.">kimi-k2:free</button>
+                    <button class="chip" data-model="openrouter/deepseek/deepseek-r1:free" data-info="Switch to DeepSeek R1 Free on OpenRouter.">deepseek-r1:free</button>
+                    <button class="chip" data-model="cerebras/qwen-3-coder-480b" data-info="Switch to Cerebras Qwen 3 Coder 480B (2,000 tok/sec).">cerebras/qwen-3-coder-480b</button>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- TAB 2: NODE ROUTER (COMBOS & 3-LAYER RESILIENCE) -->
+          <!-- TAB 2: 3D NODE ROUTER (COMBOS & 3-LAYER RESILIENCE) -->
           <section id="tab-router" class="tab-panel">
-            <div class="bl-panel" style="margin-bottom: 14px;">
+            <div class="bl-panel">
               <div class="bl-panel-header">
-                <span>▾ Blender Shader-Style AI Routing Node Editor &amp; Auto-Failover Chain</span>
+                <span>▾ Auto-Failover Free Coding Model Chain (When Quota Finishes → Switch Next Automatically)</span>
                 <div class="btn-row">
-                  <label class="bl-check-label">
+                  <label class="bl-check-label" data-info="Enable or disable automatic model switching when a free model reaches its rate limit or quota.">
                     <input id="chkAutoSwitchFree" type="checkbox" checked /> Auto-Switch on Quota Finish
                   </label>
-                  <button id="btnRotateNextFreeNow" class="bl-btn bl-btn-blue">↻ Switch Next Free Model Now</button>
-                  <button id="btnSaveFallbackChain" class="bl-btn bl-btn-orange">Save Routing Chain</button>
+                  <button id="btnRotateNextFreeNow" class="bl-btn bl-btn-blue" data-info="Test or manually trigger switching to the next free coding model in the list below.">↻ Switch Next Free Model Now</button>
+                  <button id="btnSaveFallbackChain" class="bl-btn bl-btn-orange" data-info="Save your custom priority order of free coding models.">Save Routing Chain</button>
                 </div>
               </div>
               <div class="bl-panel-body">
                 <p class="muted">
-                  When the active free model hits HTTP <code>429</code> (rate limit), <code>402</code> (quota finished), or <code>503</code> (overloaded), both the OpenCode V2 plugin (<code>free-model-autoswitch.js</code>) and the built-in Local Smart Gateway (<code>http://127.0.0.1:4141/v1</code>) automatically switch to the next healthy free coding model below so your coding session never stops.
+                  Order your models from <strong>Best → Low</strong> (one <code>provider/model</code> per line). When Model #1 hits HTTP <code>429</code> / quota limit, OpenCode Studio automatically rotates through your Multi-Key Pool and then switches to Model #2, #3, etc. without stopping your work.
                 </p>
                 <div class="form-row">
-                  <label for="txtFallbackChain">Ordered Free Coding Model Chain (One <code>provider/model</code> per line, Best → Low)</label>
-                  <textarea id="txtFallbackChain" rows="7" spellcheck="false"></textarea>
+                  <label for="txtFallbackChain">Ordered Free Coding Model Chain (One <code>provider/model</code> per line)</label>
+                  <textarea id="txtFallbackChain" rows="9" spellcheck="false"></textarea>
                 </div>
                 <div id="fallbackLastStatus" class="bl-status-line" aria-live="polite"></div>
               </div>
             </div>
           </section>
 
-          <!-- TAB 3: AI API KEYS (FREE, PAID, LOCAL & CUSTOM) -->
+          <!-- TAB 3: AI API KEYS & LIVE KEY MODEL SCANNER -->
           <section id="tab-keys" class="tab-panel">
-            <div class="bl-panel" style="margin-bottom: 14px;">
+            <div class="bl-panel" style="margin-bottom: 12px;">
               <div class="bl-panel-header">
-                <span>▾ Add Custom Provider or Any AI Model</span>
-                <span class="bl-tag-orange">Accepts All Models &amp; Gateways</span>
+                <span>▾ Put Your API Key &amp; Auto-Read All Models Inside Your Key (Free, Paid &amp; Custom)</span>
+                <span class="bl-tag-orange">Live /v1/models Scanner + Multi-Key Pool</span>
               </div>
               <div class="bl-panel-body">
+                <p class="muted">
+                  Paste any API key (or multiple keys, one per line, for automatic key rotation) and click <strong>🔍 Scan Models in My API Key</strong>. The app will connect to the provider, read every model unlocked by your key, and let you activate any model in 1 click!
+                </p>
                 <div class="form-grid-2">
                   <div class="form-row">
-                    <label for="custProviderId">Provider ID</label>
-                    <input id="custProviderId" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. openrouter, groq, deepseek, my-gateway…" />
+                    <label for="custProviderId">Provider ID (Select or type custom)</label>
+                    <input id="custProviderId" type="text" autocomplete="off" spellcheck="false" value="openrouter" placeholder="e.g. google, openrouter, groq, cerebras, openai, anthropic, deepseek…" />
                   </div>
                   <div class="form-row">
-                    <label for="custModelId">Model ID</label>
-                    <input id="custModelId" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. qwen/qwen3-coder:free or claude-sonnet-4-5…" />
-                  </div>
-                </div>
-                <div class="form-grid-2">
-                  <div class="form-row">
-                    <label for="custDisplayName">Display Name (Optional)</label>
-                    <input id="custDisplayName" type="text" autocomplete="off" placeholder="e.g. Qwen 3 Coder Free…" />
-                  </div>
-                  <div class="form-row">
-                    <label for="custBaseUrl">Custom Base URL (Optional)</label>
-                    <input id="custBaseUrl" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.example.com/v1…" />
+                    <label for="custBaseUrl">Custom Endpoint Base URL (Optional — Auto-filled for known providers)</label>
+                    <input id="custBaseUrl" type="url" autocomplete="off" spellcheck="false" placeholder="Leave blank for official endpoint, or https://your-gateway.com/v1…" />
                   </div>
                 </div>
                 <div class="form-row">
-                  <label for="custApiKey">API Key (Stored privately in local key file &amp; <code>.env</code>)</label>
-                  <input id="custApiKey" type="password" autocomplete="off" placeholder="sk-…" />
+                  <label for="custApiKey">Your API Key(s) — Paste 1 Key or Multiple Keys (One per line for Multi-Key Pooling)</label>
+                  <textarea id="custApiKey" rows="2" spellcheck="false" placeholder="Paste your API key here (e.g. AIza..., sk-or-..., gsk_..., sk-ant-...)…"></textarea>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-row">
+                    <label for="custModelId">Or Enter Specific Model ID Manually (Optional)</label>
+                    <input id="custModelId" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. qwen/qwen3-coder:free or gpt-5…" />
+                  </div>
+                  <div class="form-row">
+                    <label for="custDisplayName">Display Name (Optional)</label>
+                    <input id="custDisplayName" type="text" autocomplete="off" placeholder="e.g. My Custom Coder…" />
+                  </div>
                 </div>
                 <div class="btn-row">
-                  <button id="btnAddCustomModel" class="bl-btn bl-btn-orange">Save Model &amp; Set Active</button>
+                  <button id="btnScanCustomKeyModels" class="bl-btn bl-btn-blue" data-info="Connects using your API key above, reads all models available on that key, and displays them below for 1-click selection.">
+                    🔍 Scan &amp; Read All Models in My API Key
+                  </button>
+                  <button id="btnAddCustomModel" class="bl-btn bl-btn-orange" data-info="Saves the API key and model above and sets it as your active OpenCode model.">
+                    Save Key &amp; Activate Model
+                  </button>
+                </div>
+                <div id="scannedModelsBox" class="scanned-models-box hidden">
+                  <div class="label-xs" id="scannedModelsTitle">MODELS DISCOVERED IN YOUR API KEY (CLICK ANY MODEL TO USE IT):</div>
+                  <div id="scannedModelsList" class="quick-chips"></div>
                 </div>
               </div>
             </div>
 
             <div class="bl-panel">
               <div class="bl-panel-header">
-                <span>▾ All AI Providers (14 Free Tiers, Paid &amp; Local Offline Runtimes)</span>
-                <span class="bl-tag">Private .env + {file:...}</span>
+                <span>▾ 20+ Built-In Coding Providers (Supports Multi-Key Pooling &amp; 1-Click Key Model Scan)</span>
+                <span class="bl-tag">Free Tiers + Frontier Paid + Local Offline</span>
               </div>
               <div class="bl-panel-body">
                 <div id="providersGrid" class="providers-grid"></div>
@@ -291,14 +343,14 @@
             <div class="bl-panel">
               <div class="bl-panel-header">
                 <span>▾ Free AI Coding Models — Ranked Best to Low (S+ → B Tier + Live OpenRouter $0 Pool)</span>
-                <button id="btnRefreshFreeModels" class="bl-btn bl-btn-default">Refresh Live Catalog</button>
+                <button id="btnRefreshFreeModels" class="bl-btn bl-btn-default" data-info="Fetches the newest live $0 free coding models from OpenRouter API.">Refresh Live Catalog</button>
               </div>
               <div class="bl-panel-body">
-                <h3 class="section-subtitle">1. Curated Top Free Coding Tiers (Best → Low)</h3>
+                <h3 class="section-subtitle">1. Curated Top 12 Free Coding Models (Best → Low)</h3>
                 <div id="curatedModelsTable" class="models-table"></div>
 
                 <h3 class="section-subtitle" style="margin-top: 18px;">
-                  2. Live $0 Free Coding Models on OpenRouter (Auto-Scored for Code &amp; Context)
+                  2. Live $0 Free Coding Models on OpenRouter (Auto-Scored for Coding &amp; Context)
                 </h3>
                 <div id="liveModelsTable" class="models-table"></div>
               </div>
@@ -311,19 +363,19 @@
               <div class="bl-panel-header">
                 <span>▾ Universal World Skill Importer (Claude Code, Codex, Cursor, Any GitHub Repo or Web URL)</span>
                 <div class="btn-row">
-                  <button id="btnSyncAllAgentSkills" class="bl-btn bl-btn-blue">
+                  <button id="btnSyncAllAgentSkills" class="bl-btn bl-btn-blue" data-info="Scans your PC for skills in Claude Code, Codex, Gemini, and OpenCode and unifies them across all agents.">
                     ⇄ Sync All Skills on PC (Claude + Codex + Gemini + OpenCode)
                   </button>
                 </div>
               </div>
               <div class="bl-panel-body">
                 <p class="muted">
-                  Import any skill from anywhere in the world: paste a GitHub repo (<code>owner/repo</code>), any raw web URL (<code>SKILL.md</code>, <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, <code>.mdc</code>), or a local file path. OpenCode Studio auto-converts it and installs it across OpenCode, Claude Code, Codex &amp; Gemini!
+                  Import any skill from anywhere in the world: paste a GitHub repo (<code>owner/repo</code>), any raw web URL (<code>SKILL.md</code>, <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, <code>.mdc</code>), or paste raw instructions below.
                 </p>
                 <div class="form-grid-2">
                   <div class="form-row">
                     <label for="inpUniSkillSource">Any URL, GitHub Repo, or Local File Path</label>
-                    <input id="inpUniSkillSource" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. https://github.com/anthropics/skills or owner/repo or C:\path\CLAUDE.md…" />
+                    <input id="inpUniSkillSource" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. https://github.com/anthropics/skills or owner/repo…" />
                   </div>
                   <div class="form-row">
                     <label for="inpUniSkillName">Skill Name (Optional — Auto-Detected if blank)</label>
@@ -331,17 +383,17 @@
                   </div>
                 </div>
                 <div class="form-row">
-                  <label for="txtUniSkillRaw">Or Paste Raw Skill / Prompt Rules Directly (Optional — From Any Website, Claude, or Codex)</label>
-                  <textarea id="txtUniSkillRaw" rows="3" placeholder="Paste any prompt instructions, Cursor rules, Claude skill, or Codex agent guide here to convert into an active skill…"></textarea>
+                  <label for="txtUniSkillRaw">Or Paste Raw Skill / Prompt Rules Directly (Optional)</label>
+                  <textarea id="txtUniSkillRaw" rows="3" placeholder="Paste any prompt instructions, Cursor rules, Claude skill, or Codex agent guide here…"></textarea>
                 </div>
                 <div class="btn-row">
-                  <button id="btnImportUniversalSkill" class="bl-btn bl-btn-orange">
+                  <button id="btnImportUniversalSkill" class="bl-btn bl-btn-orange" data-info="Downloads or converts the skill and installs it across OpenCode, Claude Code, Codex, and Gemini.">
                     ★ Import &amp; Convert Skill for All Agents
                   </button>
                   <span style="font-size:11px; color:#9d9d9d; margin-left:6px;">Quick World Packs:</span>
-                  <button class="chip world-pack-btn" data-pack="anthropics/skills">Anthropic Official Skills</button>
-                  <button class="chip world-pack-btn" data-pack="vercel-labs/agent-skills">Vercel Agent Skills</button>
-                  <button class="chip world-pack-btn" data-pack="morluto/rea --skill reverse-engineer-anything">REA 6.8.0 Skill</button>
+                  <button class="chip world-pack-btn" data-pack="anthropics/skills" data-info="Install official Anthropic Claude Code Skills pack.">Anthropic Official Skills</button>
+                  <button class="chip world-pack-btn" data-pack="vercel-labs/agent-skills" data-info="Install official Vercel React/Next.js/Web Design Skills pack.">Vercel Agent Skills</button>
+                  <button class="chip world-pack-btn" data-pack="morluto/rea --skill reverse-engineer-anything" data-info="Install REA 6.8.0 Reverse Engineering Skill.">REA 6.8.0 Skill</button>
                 </div>
               </div>
             </div>
@@ -357,21 +409,21 @@
                     <label for="inpUniversalPlugin">Install Any OpenCode Plugin (npm package, GitHub repo, or local path)</label>
                     <div class="input-group">
                       <input id="inpUniversalPlugin" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. opencode-agent-memory@latest or ./my-plugin.js…" />
-                      <button id="btnInstallUniversalPlugin" class="bl-btn bl-btn-orange">Install Plugin</button>
+                      <button id="btnInstallUniversalPlugin" class="bl-btn bl-btn-orange" data-info="Installs the plugin natively or creates a V2 compatibility bridge if it is a legacy V1 plugin.">Install Plugin</button>
                     </div>
                   </div>
                   <div class="form-row">
                     <label for="inpSkillSearch">Search Global Skills Registry by Topic / Framework</label>
                     <div class="input-group">
                       <input id="inpSkillSearch" type="text" autocomplete="off" placeholder="e.g. godot, android, react, python, rust, blender…" />
-                      <button id="btnSearchSkillNow" class="bl-btn bl-btn-blue">Search Registry</button>
+                      <button id="btnSearchSkillNow" class="bl-btn bl-btn-blue" data-info="Searches the skills.sh registry for matching agent skills.">Search Registry</button>
                     </div>
                   </div>
                   <div class="form-row">
                     <label for="inpSkillInstall">Install Specific Registry Skill (<code>owner/repo --skill name</code>)</label>
                     <div class="input-group">
                       <input id="inpSkillInstall" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. vercel-labs/agent-skills --skill web-design-guidelines…" />
-                      <button id="btnInstallSkillNow" class="bl-btn bl-btn-default">Install Skill</button>
+                      <button id="btnInstallSkillNow" class="bl-btn bl-btn-default" data-info="Installs the specified skill globally into OpenCode.">Install Skill</button>
                     </div>
                   </div>
                 </div>
@@ -380,26 +432,87 @@
               <div class="bl-panel">
                 <div class="bl-panel-header">
                   <span>▾ Active Plugins, MCP &amp; Installed Global Skills</span>
-                  <button id="btnOpenConfigFolder" class="bl-btn bl-btn-default">Open Config Folder</button>
+                  <button id="btnOpenConfigFolder" class="bl-btn bl-btn-default" data-info="Opens your ~/.config/opencode directory in Windows Explorer.">Open Config Folder</button>
                 </div>
                 <div class="bl-panel-body">
                   <div class="label-xs">ACTIVE PLUGINS &amp; MCP</div>
                   <div id="pillsPlugins" class="pill-wrap"></div>
-                  <div class="label-xs" style="margin-top: 12px;">INSTALLED GLOBAL SKILLS (OPENCODE + CLAUDE + CODEX)</div>
+                  <div class="label-xs" style="margin-top: 12px;">INSTALLED GLOBAL SKILLS</div>
                   <div id="pillsSkills" class="pill-wrap"></div>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- TAB 6: APPS & DRIVERS WIZARD -->
+          <!-- TAB 6: CLOUD SIGN-IN & CROSS-PC ENCRYPTED SYNC -->
+          <section id="tab-cloud" class="tab-panel">
+            <div class="two-col">
+              <div class="bl-panel">
+                <div class="bl-panel-header">
+                  <span>▾ Sign In with GitHub or Google Drive (Cross-PC Workspace Sync)</span>
+                  <span class="bl-tag-orange">AES-256-GCM Encrypted</span>
+                </div>
+                <div class="bl-panel-body">
+                  <p class="muted">
+                    Sign in with <strong>GitHub</strong> (syncs to a private secret GitHub Gist on your account) or <strong>Google Drive / OneDrive</strong> (syncs to your cloud drive folder) so you can save your models, fallback chain, node layout, and AES-256 encrypted API keys and open them on any other PC!
+                  </p>
+                  <div id="cloudAccountStatusBox" class="bl-prop-box" style="margin-bottom: 10px;">
+                    Not signed in yet. Choose GitHub or Google below.
+                  </div>
+
+                  <div class="form-row">
+                    <label for="inpCloudGithubToken">GitHub Personal Access Token (<code>gist</code> scope) — Or leave blank if already saved in GitHub Models</label>
+                    <div class="input-group">
+                      <input id="inpCloudGithubToken" type="password" autocomplete="off" placeholder="ghp_… (or click Sign In with GitHub to generate one)" />
+                      <button id="btnSignInGitHub" class="bl-btn bl-btn-orange" data-info="Signs into your GitHub account (or opens GitHub token page if needed) for private Gist cloud sync.">Sign In with GitHub</button>
+                    </div>
+                  </div>
+
+                  <div class="form-row" style="margin-top: 10px;">
+                    <label for="inpCloudGoogleEmail">Or Sign In with Google Account / Cloud Drive Folder (Google Drive / OneDrive)</label>
+                    <div class="input-group">
+                      <input id="inpCloudGoogleEmail" type="text" autocomplete="off" placeholder="you@example.com (Syncs via Google Drive / Cloud folder)…" />
+                      <button id="btnSignInGoogle" class="bl-btn bl-btn-blue" data-info="Connects your Google account / Google Drive folder for automatic cross-PC sync.">Sign In with Google</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bl-panel">
+                <div class="bl-panel-header">
+                  <span>▾ Save Work to Cloud &amp; Restore on Another PC</span>
+                  <button id="btnSignOutCloud" class="bl-btn bl-btn-danger" data-info="Signs out of your connected cloud sync account on this PC.">Sign Out</button>
+                </div>
+                <div class="bl-panel-body">
+                  <div class="form-row">
+                    <label for="inpSyncPassphrase">Encryption Passphrase for API Keys (Optional — AES-256-GCM)</label>
+                    <input id="inpSyncPassphrase" type="password" autocomplete="off" placeholder="Enter a secret passphrase to encrypt/decrypt your API keys in the cloud…" />
+                  </div>
+                  <div class="form-row">
+                    <label for="inpSyncGistId">Cloud Sync Gist ID (Auto-filled on push; paste here on a new PC to pull)</label>
+                    <input id="inpSyncGistId" type="text" autocomplete="off" spellcheck="false" placeholder="Auto-filled when you click Save Work to Cloud…" />
+                  </div>
+                  <div class="btn-row">
+                    <button id="btnPushCloudSync" class="bl-btn bl-btn-orange" data-info="Uploads your workspace, fallback chain, node graph, and AES-256 encrypted keys to your private cloud.">
+                      ☁ Save Work to Cloud Now
+                    </button>
+                    <button id="btnPullCloudSync" class="bl-btn bl-btn-blue" data-info="Downloads and restores your workspace, fallback chain, node graph, and encrypted keys onto this PC.">
+                      ⬇ Restore Work from Cloud
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 7: APPS & DRIVERS WIZARD -->
           <section id="tab-prereqs" class="tab-panel">
             <div class="bl-panel">
               <div class="bl-panel-header">
                 <span>▾ Pre-Install Apps, Runtimes &amp; Device Drivers</span>
                 <div class="btn-row">
-                  <button id="btnSelectMissingPrereqs" class="bl-btn bl-btn-default">Select Missing</button>
-                  <button id="btnInstallSelectedPrereqs" class="bl-btn bl-btn-orange">Install Selected Apps / Drivers</button>
+                  <button id="btnSelectMissingPrereqs" class="bl-btn bl-btn-default" data-info="Automatically checks only the apps or drivers that are not yet installed on this PC.">Select Missing</button>
+                  <button id="btnInstallSelectedPrereqs" class="bl-btn bl-btn-orange" data-info="Installs all checked runtimes, tools, and Android ADB USB drivers.">Install Selected Apps / Drivers</button>
                 </div>
               </div>
               <div class="bl-panel-body">
@@ -408,7 +521,7 @@
             </div>
           </section>
 
-          <!-- TAB 7: BUG REPORTER & AUTO GITHUB ISSUE SENDER -->
+          <!-- TAB 8: BUG REPORTER & AUTO GITHUB ISSUE SENDER -->
           <section id="tab-bugs" class="tab-panel">
             <div class="two-col">
               <div class="bl-panel">
@@ -433,10 +546,10 @@
                     <textarea id="inpBugSteps" rows="3" placeholder="1. Open Node Router… 2. Click…"></textarea>
                   </div>
                   <div class="btn-row">
-                    <button id="btnSubmitGitHubIssue" class="bl-btn bl-btn-orange">
+                    <button id="btnSubmitGitHubIssue" class="bl-btn bl-btn-orange" data-info="Submits this bug report (with secrets redacted) directly to github.com/vaasiraq-art/opencode-studio/issues.">
                       🐞 Send Issue to GitHub Repo Now
                     </button>
-                    <button id="btnOpenRepoIssuesPage" class="bl-btn bl-btn-default">
+                    <button id="btnOpenRepoIssuesPage" class="bl-btn bl-btn-default" data-info="Opens the GitHub Issues page in your browser.">
                       View All Repo Issues &amp; PRs
                     </button>
                   </div>
@@ -446,7 +559,7 @@
               <div class="bl-panel">
                 <div class="bl-panel-header">
                   <span>▾ Auto-Captured Runtime &amp; Command Errors</span>
-                  <button id="btnClearBugLogs" class="bl-btn bl-btn-default">Clear Log</button>
+                  <button id="btnClearBugLogs" class="bl-btn bl-btn-default" data-info="Clears the local list of captured error logs.">Clear Log</button>
                 </div>
                 <div class="bl-panel-body">
                   <div id="bugReportsList" class="models-table"></div>
@@ -455,16 +568,16 @@
             </div>
           </section>
 
-          <!-- TAB 8: SCRIPTING / TERMINAL PRESETS -->
+          <!-- TAB 9: SCRIPTING / TERMINAL PRESETS -->
           <section id="tab-terminal-tab" class="tab-panel">
             <div class="bl-panel">
               <div class="bl-panel-header">
                 <span>▾ Scripting &amp; CLI Command Presets</span>
                 <div class="btn-row">
-                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="opencode --version">opencode --version</button>
-                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="opencode plugin list">opencode plugin list</button>
-                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="graphify --version">graphify --version</button>
-                  <button id="btnPopoutTerminal" class="bl-btn bl-btn-orange">Open External OpenCode TUI</button>
+                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="opencode --version" data-info="Check installed OpenCode CLI version.">opencode --version</button>
+                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="opencode plugin list" data-info="List all configured OpenCode plugins.">opencode plugin list</button>
+                  <button class="bl-btn bl-btn-default cmd-preset" data-cmd="graphify --version" data-info="Check installed Graphify version.">graphify --version</button>
+                  <button id="btnPopoutTerminal" class="bl-btn bl-btn-orange" data-info="Launches an external PowerShell window running OpenCode TUI.">Open External OpenCode TUI</button>
                 </div>
               </div>
               <div class="bl-panel-body">
@@ -484,14 +597,18 @@
 
         <div class="bl-inspector-body">
           <div class="bl-prop-box">
-            <div class="bl-prop-title">▾ Smart Local Gateway</div>
+            <div class="bl-prop-title">▾ Smart Local Gateway (:4141)</div>
             <div class="prop-kv">
-              <span>Local Endpoint</span>
-              <code translate="no">http://127.0.0.1:4141/v1</code>
+              <span>OpenAI Wire</span>
+              <code translate="no">:4141/v1</code>
+            </div>
+            <div class="prop-kv">
+              <span>Anthropic Wire</span>
+              <code translate="no">:4141/v1/messages</code>
             </div>
             <div class="prop-kv">
               <span>Routing Strategy</span>
-              <select id="selGatewayStrategy" aria-label="Gateway Routing Strategy">
+              <select id="selGatewayStrategy" aria-label="Gateway Routing Strategy" data-info="Select how the Smart Gateway chooses models across your fallback pool.">
                 <option value="smart-coding">smart-coding (Quality + Quota)</option>
                 <option value="priority">priority (Ordered Drain)</option>
                 <option value="lkgp">lkgp (Last Known Good)</option>
@@ -499,28 +616,37 @@
               </select>
             </div>
             <div class="prop-kv">
-              <label for="chkTokenCompress">Token Compression</label>
-              <input id="chkTokenCompress" type="checkbox" checked />
+              <label for="chkTokenCompress">Token Optimizer</label>
+              <input id="chkTokenCompress" type="checkbox" checked data-info="Automatically strips ANSI codes and redundant log whitespace to save 15%–70% tokens." />
+            </div>
+            <div class="prop-kv">
+              <label for="chkPromptCache">0ms Prompt Cache</label>
+              <input id="chkPromptCache" type="checkbox" checked data-info="Caches identical prompt prefixes in memory for 0ms instant responses and 100% token savings." />
             </div>
             <div class="prop-kv">
               <label for="chkAutoBugCapture">Auto-Capture Bugs</label>
-              <input id="chkAutoBugCapture" type="checkbox" checked />
+              <input id="chkAutoBugCapture" type="checkbox" checked data-info="Automatically captures runtime or command errors for 1-click GitHub Issue reporting." />
             </div>
           </div>
 
           <div class="bl-prop-box">
-            <div class="bl-prop-title">▾ Live Telemetry</div>
+            <div class="bl-prop-title">
+              <span>▾ Live Telemetry</span>
+              <button id="btnClearCacheSmall" class="bl-btn bl-btn-default" style="padding:1px 6px; font-size:10px;" data-info="Clear the in-memory prompt response cache.">Clear Cache</button>
+            </div>
             <div class="prop-kv"><span>Requests Routed</span><strong id="inspReqCount" class="num-val">0</strong></div>
+            <div class="prop-kv"><span>0ms Cache Hits</span><strong id="inspCacheHits" class="num-val">0</strong></div>
             <div class="prop-kv"><span>Failovers Saved</span><strong id="inspFailovers" class="num-val">0</strong></div>
             <div class="prop-kv"><span>Tokens Saved</span><strong id="inspTokensSaved" class="num-val">0</strong></div>
+            <div class="prop-kv"><span>Avg Latency</span><strong id="inspLatency" class="num-val">0 ms</strong></div>
           </div>
 
           <div class="bl-prop-box">
             <div class="bl-prop-title">▾ Community &amp; Repo</div>
-            <p style="font-size:11.5px; color:#9d9d9d; line-height:1.4; margin-bottom:8px;">
-              Users &amp; coders can download, edit locally, and send issues/PRs. Official releases are deployed by <strong>vaasiraq-art</strong>.
+            <p style="font-size:11px; color:#9d9d9d; line-height:1.4; margin-bottom:8px;">
+              Hover over any button in the app to see instant help here and in the bottom status bar.
             </p>
-            <button id="btnOpenGitHubRepo" class="bl-btn bl-btn-default full-width">
+            <button id="btnOpenGitHubRepo" class="bl-btn bl-btn-default full-width" data-info="Open https://github.com/vaasiraq-art/opencode-studio in your web browser.">
               ★ Open GitHub Repository
             </button>
           </div>
@@ -536,37 +662,37 @@
           <span id="termCwdLabel">Blender Info &amp; PowerShell Terminal</span>
         </div>
         <div class="terminal-controls">
-          <button id="btnStopTermCmd" class="bl-btn bl-btn-danger">Stop Process</button>
-          <button id="btnClearTerm" class="bl-btn bl-btn-default">Clear</button>
-          <button id="btnToggleDock" class="bl-btn bl-btn-default">Expand / Collapse</button>
+          <button id="btnStopTermCmd" class="bl-btn bl-btn-danger" data-info="Terminate the currently running shell command.">Stop Process</button>
+          <button id="btnClearTerm" class="bl-btn bl-btn-default" data-info="Clear the terminal console output.">Clear</button>
+          <button id="btnToggleDock" class="bl-btn bl-btn-default" data-info="Expand or collapse the bottom terminal console dock.">Expand / Collapse</button>
         </div>
       </div>
-      <pre id="terminalOutput" class="terminal-output" aria-live="polite">OpenCode Studio v2.0 (Blender Edition) Ready.
-Smart AI Gateway active at http://127.0.0.1:4141/v1 • REA 6.8.0 • Graphify 0.9.95 • Auto-Fallback Enabled.
+      <pre id="terminalOutput" class="terminal-output" aria-live="polite">OpenCode Studio v3.0 (Blender 3D Flagship Edition) Ready.
+Streaming Gateway active at http://127.0.0.1:4141/v1 • Multi-Key Pool • Live Key Model Scanner • Cloud Sync Ready.
 </pre>
       <div class="terminal-input-bar">
         <label for="terminalInput" class="prompt-char">PS &gt;</label>
         <input id="terminalInput" name="terminalCommand" type="text" autocomplete="off" spellcheck="false" placeholder="Type any command (e.g. opencode plugin list, graphify --version, adb devices) and press Enter…" />
-        <button id="btnSendTermCmd" class="bl-btn bl-btn-orange">Run Command</button>
+        <button id="btnSendTermCmd" class="bl-btn bl-btn-orange" data-info="Execute the typed PowerShell command inside the embedded console.">Run Command</button>
       </div>
     </section>
 
-    <!-- BLENDER BOTTOM STATUS BAR -->
+    <!-- BLENDER BOTTOM STATUS BAR (Shows live button info on hover!) -->
     <footer class="bl-statusbar">
       <div class="bl-status-left">
-        <span>LMB: Select / Activate</span>
-        <span>•</span>
-        <span>Gateway: <code>http://127.0.0.1:4141/v1</code></span>
-        <span>•</span>
-        <span id="statusLastEvent">Ready (0ms Startup)</span>
+        <span class="bl-tag-orange" style="padding:0 5px;">INFO</span>
+        <span id="statusHoverHelp">Hover over any button or control to see what it does…</span>
       </div>
       <div class="bl-status-right">
-        <span>Repo: <code>github.com/vaasiraq-art/opencode-studio</code></span>
+        <span id="statusLastEvent">Gateway Ready (:4141/v1)</span>
         <span>•</span>
-        <span>v2.0.0</span>
+        <span>v3.0.0</span>
       </div>
     </footer>
   </div>
+
+  <!-- FLOATING BLENDER BUTTON INFO TOOLTIP -->
+  <div id="blenderTooltip" class="bl-floating-tooltip hidden" role="tooltip"></div>
 
   <!-- STARTUP MODAL: UPDATE CHECK & PRE-INSTALL APPS PROMPT -->
   <div id="startupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">

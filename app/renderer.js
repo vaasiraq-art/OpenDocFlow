@@ -20,12 +20,159 @@ window.studioAPI.onBugCaptured((bug) => {
   refreshBugReports();
 });
 
+// ============================================================================
+// BLENDER FLOATING BUTTON INFO TOOLTIP + STATUSBAR HOVER HELP
+// ============================================================================
+const tooltipEl = document.getElementById('blenderTooltip');
+const statusHoverEl = document.getElementById('statusHoverHelp');
+
+document.addEventListener('mouseover', (e) => {
+  const target = e.target.closest('[data-info]');
+  if (!target) {
+    if (tooltipEl) tooltipEl.classList.add('hidden');
+    return;
+  }
+  const infoText = target.getAttribute('data-info');
+  if (!infoText) return;
+
+  if (statusHoverEl) {
+    statusHoverEl.textContent = infoText;
+  }
+  if (tooltipEl) {
+    tooltipEl.textContent = infoText;
+    tooltipEl.classList.remove('hidden');
+    const rect = target.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 7;
+    if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
+    if (top + 70 > window.innerHeight) top = rect.top - 58;
+    tooltipEl.style.left = `${Math.max(8, left)}px`;
+    tooltipEl.style.top = `${Math.max(8, top)}px`;
+  }
+});
+
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest('[data-info]')) {
+    if (tooltipEl) tooltipEl.classList.add('hidden');
+  }
+});
+
+// ============================================================================
+// INTERACTIVE DRAGGABLE BLENDER SHADER NODES + SVG BEZIER NOODLES
+// ============================================================================
+const DEFAULT_NODE_POS = {
+  n1: { left: 14, top: 20 },
+  n2: { left: 235, top: 20 },
+  n3: { left: 458, top: 20 },
+  n4: { left: 682, top: 14 }
+};
+
+function drawNodeBezierWires() {
+  const svg = document.getElementById('nodeWiresSvg');
+  const stage = document.getElementById('nodeGraphStage');
+  if (!svg || !stage) return;
+
+  const pairs = [
+    ['n1', 'n2', '#ff8c32'],
+    ['n2', 'n3', '#9b6bcc'],
+    ['n3', 'n4', '#5fb878']
+  ];
+
+  let pathsHtml = '';
+  for (const [fromId, toId, color] of pairs) {
+    const nA = stage.querySelector(`.draggable-node[data-node-id="${fromId}"]`);
+    const nB = stage.querySelector(`.draggable-node[data-node-id="${toId}"]`);
+    if (!nA || !nB) continue;
+
+    const x1 = nA.offsetLeft + nA.offsetWidth;
+    const y1 = nA.offsetTop + 16;
+    const x2 = nB.offsetLeft;
+    const y2 = nB.offsetTop + 16;
+    const dx = Math.max(40, Math.abs(x2 - x1) * 0.5);
+
+    const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+    pathsHtml += `<path d="${d}" stroke="${color}" stroke-width="2.6" fill="none" stroke-linecap="round" />`;
+  }
+  svg.innerHTML = pathsHtml;
+}
+
+function initDraggableNodes() {
+  const stage = document.getElementById('nodeGraphStage');
+  if (!stage) return;
+
+  let activeNode = null;
+  let startX = 0;
+  let startY = 0;
+  let origLeft = 0;
+  let origTop = 0;
+
+  stage.querySelectorAll('.draggable-node').forEach((node) => {
+    node.addEventListener('mousedown', (e) => {
+      activeNode = node;
+      startX = e.clientX;
+      startY = e.clientY;
+      origLeft = node.offsetLeft;
+      origTop = node.offsetTop;
+      e.preventDefault();
+    });
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!activeNode) return;
+    const nx = Math.max(4, Math.min(stage.clientWidth - activeNode.offsetWidth - 4, origLeft + (e.clientX - startX)));
+    const ny = Math.max(4, Math.min(stage.clientHeight - activeNode.offsetHeight - 4, origTop + (e.clientY - startY)));
+    activeNode.style.left = `${nx}px`;
+    activeNode.style.top = `${ny}px`;
+    drawNodeBezierWires();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!activeNode) return;
+    activeNode = null;
+    const layout = {};
+    stage.querySelectorAll('.draggable-node').forEach((n) => {
+      layout[n.dataset.nodeId] = { left: n.offsetLeft, top: n.offsetTop };
+    });
+    window.studioAPI.saveNodeGraphLayout(layout);
+  });
+
+  document.getElementById('btnResetNodePositions').addEventListener('click', () => {
+    stage.querySelectorAll('.draggable-node').forEach((n) => {
+      const def = DEFAULT_NODE_POS[n.dataset.nodeId];
+      if (def) {
+        n.style.left = `${def.left}px`;
+        n.style.top = `${def.top}px`;
+      }
+    });
+    drawNodeBezierWires();
+    window.studioAPI.saveNodeGraphLayout(DEFAULT_NODE_POS);
+  });
+
+  window.addEventListener('resize', drawNodeBezierWires);
+}
+
+async function loadSavedNodePositions() {
+  const saved = await window.studioAPI.getNodeGraphLayout();
+  const stage = document.getElementById('nodeGraphStage');
+  if (saved && stage) {
+    stage.querySelectorAll('.draggable-node').forEach((n) => {
+      const pos = saved[n.dataset.nodeId];
+      if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+        n.style.left = `${pos.left}px`;
+        n.style.top = `${pos.top}px`;
+      }
+    });
+  }
+  setTimeout(drawNodeBezierWires, 60);
+}
+
 const TAB_TITLES = {
-  dashboard: '3D / Node Viewport — Studio Layout',
+  dashboard: 'Blender 3D / Shader Node Viewport — Studio Layout',
   router: 'Shader Node Editor — AI Routing Combos & Auto-Failover',
-  keys: 'Provider Credentials — Free, Paid, Local & Custom Gateways',
+  keys: 'AI Keys, Multi-Key Pool & Live API Key Model Scanner',
   'free-models': 'Ranked Free Coding Models — Best (S+) to Low',
   skills: 'Universal World Skill & Plugin Harvester (Claude, Codex, Cursor, Web)',
+  cloud: 'Cloud Sign-In (GitHub / Google) & Cross-PC AES-256 Sync',
   prereqs: 'System & Device Drivers Wizard (OpenCode, Node, ADB, REA, Graphify)',
   bugs: 'Auto Bug Catcher & 1-Click GitHub Issue Reporter',
   'terminal-tab': 'Scripting & CLI Presets'
@@ -40,6 +187,7 @@ function switchTab(tabId) {
   });
   const headerLbl = document.getElementById('viewportHeaderLabel');
   if (headerLbl) headerLbl.textContent = TAB_TITLES[tabId] || 'Studio Viewport';
+  if (tabId === 'dashboard') setTimeout(drawNodeBezierWires, 30);
 }
 
 document.querySelectorAll('.bl-ws-tab').forEach((btn) => {
@@ -118,13 +266,20 @@ async function refreshGatewayTelemetry() {
   if (!gw) return;
 
   document.getElementById('inspReqCount').textContent = gw.requestsTotal;
+  document.getElementById('inspCacheHits').textContent = gw.cacheHits || 0;
   document.getElementById('inspFailovers').textContent = gw.failoversSaved;
   document.getElementById('inspTokensSaved').textContent = gw.tokensSaved;
+  document.getElementById('inspLatency').textContent = `${gw.avgLatencyMs || 0} ms`;
+
   document.getElementById('nodeTokensSaved').textContent = gw.tokensSaved;
+  document.getElementById('nodeCacheHits').textContent = gw.cacheHits || 0;
   document.getElementById('nodeFailoversCount').textContent = gw.failoversSaved;
+  document.getElementById('nodeAvgLatency').textContent = `${gw.avgLatencyMs || 0} ms`;
   document.getElementById('nodeStrategyLabel').textContent = gw.strategy;
+
   document.getElementById('selGatewayStrategy').value = gw.strategy;
   document.getElementById('chkTokenCompress').checked = gw.compressionEnabled;
+  document.getElementById('chkPromptCache').checked = gw.promptCacheEnabled !== false;
   document.getElementById('chkAutoBugCapture').checked = gw.autoBugReport;
 
   if (gw.recentEvents && gw.recentEvents.length > 0) {
@@ -143,8 +298,18 @@ async function refreshProviders() {
     const card = document.createElement('div');
     card.className = 'provider-card';
     const modelOptions = (p.models || [])
-      .map((m) => `<button class="chip model-select-btn" data-model="${p.id}/${m}">${m}</button>`)
+      .slice(0, 8)
+      .map(
+        (m) =>
+          `<button class="chip model-select-btn" data-model="${p.id}/${m}" data-info="Click to set ${p.id}/${m} as your active OpenCode model.">${m}</button>`
+      )
       .join('');
+
+    const badgeTxt = p.localNoKey
+      ? 'Local Ready'
+      : p.hasKey
+      ? `${p.keyCount || 1} Key(s) Pool`
+      : 'No Key';
 
     card.innerHTML = `
       <div class="provider-top">
@@ -152,25 +317,42 @@ async function refreshProviders() {
           <div class="provider-name">${p.name}</div>
           <div class="provider-tier">${p.tier} • <code translate="no">${p.id}</code></div>
         </div>
-        <span class="status-badge ${p.hasKey || p.localNoKey ? 'ok' : 'missing'}">
-          ${p.localNoKey ? 'Local Ready' : p.hasKey ? 'Key Saved' : 'No Key'}
-        </span>
+        <span class="status-badge ${p.hasKey || p.localNoKey ? 'ok' : 'missing'}">${badgeTxt}</span>
       </div>
       <div class="form-row" style="margin-bottom:4px;">
-        <label>${p.localNoKey ? 'Optional Bearer Key' : `API Key (${p.envKey})`}</label>
-        <input type="password" class="prov-key-inp" data-id="${p.id}" autocomplete="off" placeholder="${p.hasKey ? '•••••••••••••••• (Saved)' : 'Paste API key…'}" />
+        <label>${p.localNoKey ? 'Optional Bearer Key' : `API Key(s) (${p.envKey}) — 1 or Multiple`}</label>
+        <input type="password" class="prov-key-inp" data-id="${p.id}" autocomplete="off" placeholder="${
+          p.hasKey ? '•••••••••••••••• (Saved Pool)' : 'Paste API key…'
+        }" />
       </div>
       <div class="form-row" style="margin-bottom:4px;">
         <label>Endpoint Base URL</label>
-        <input type="url" class="prov-url-inp" data-id="${p.id}" autocomplete="off" spellcheck="false" value="${p.baseURL || ''}" placeholder="Default Official Endpoint…" />
+        <input type="url" class="prov-url-inp" data-id="${p.id}" autocomplete="off" spellcheck="false" value="${
+          p.baseURL || ''
+        }" placeholder="Default Official Endpoint…" />
       </div>
       <div class="quick-chips">${modelOptions}</div>
       <div class="btn-row" style="margin-top:auto; padding-top:4px;">
-        <button class="bl-btn bl-btn-orange btn-save-prov" data-id="${p.id}" data-name="${p.name}" data-env="${p.envKey}" data-builtin="${p.builtin}">
+        <button class="bl-btn bl-btn-orange btn-save-prov" data-id="${p.id}" data-name="${p.name}" data-env="${
+          p.envKey
+        }" data-builtin="${p.builtin}" data-info="Save API key(s) and endpoint for ${p.name}.">
           Save Key
         </button>
-        ${p.keyUrl ? `<button class="bl-btn bl-btn-default btn-get-key" data-url="${p.keyUrl}">Get Key</button>` : ''}
-        ${p.hasKey ? `<button class="bl-btn bl-btn-danger btn-del-prov" data-id="${p.id}">Clear</button>` : ''}
+        <button class="bl-btn bl-btn-blue btn-scan-prov" data-id="${p.id}" data-info="Connect with your ${
+          p.name
+        } key and discover all models unlocked by this key.">
+          🔍 Scan Key
+        </button>
+        ${
+          p.keyUrl
+            ? `<button class="bl-btn bl-btn-default btn-get-key" data-url="${p.keyUrl}" data-info="Open ${p.name} dashboard in browser to get an API key.">Get Key</button>`
+            : ''
+        }
+        ${
+          p.hasKey
+            ? `<button class="bl-btn bl-btn-danger btn-del-prov" data-id="${p.id}" data-info="Remove saved key(s) for ${p.name}.">Clear</button>`
+            : ''
+        }
       </div>
     `;
     grid.appendChild(card);
@@ -194,6 +376,27 @@ async function refreshProviders() {
     });
   });
 
+  grid.querySelectorAll('.btn-scan-prov').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const keyInp = grid.querySelector(`.prov-key-inp[data-id="${id}"]`);
+      const urlInp = grid.querySelector(`.prov-url-inp[data-id="${id}"]`);
+      appendTerm(`\n[Scanning live models unlocked by key for ${id}…]\n`);
+      const res = await window.studioAPI.discoverModelsFromKey({
+        id,
+        apiKey: keyInp.value,
+        baseURL: urlInp.value
+      });
+      if (res.ok && res.models && res.models.length > 0) {
+        appendTerm(`\n[Discovered ${res.count} models on ${id}: ${res.models.slice(0, 10).join(', ')}…]\n`);
+        showScannedModelsBox(res.providerId, res.models);
+        await refreshProviders();
+      } else {
+        appendTerm(`\n[Scan note for ${id}: ${res.error || 'No models returned'}]\n`);
+      }
+    });
+  });
+
   grid.querySelectorAll('.btn-get-key').forEach((btn) => {
     btn.addEventListener('click', () => window.studioAPI.openExternalUrl(btn.dataset.url));
   });
@@ -210,6 +413,30 @@ async function refreshProviders() {
     btn.addEventListener('click', async () => {
       await window.studioAPI.setDefaultModel(btn.dataset.model);
       appendTerm(`\n[Active OpenCode model set to ${btn.dataset.model}]\n`);
+      await refreshSystemStatus();
+    });
+  });
+}
+
+function showScannedModelsBox(providerId, models = []) {
+  const box = document.getElementById('scannedModelsBox');
+  const title = document.getElementById('scannedModelsTitle');
+  const list = document.getElementById('scannedModelsList');
+  if (!box || !list) return;
+
+  box.classList.remove('hidden');
+  title.textContent = `DISCOVERED ${models.length} MODELS IN YOUR "${providerId.toUpperCase()}" API KEY (CLICK ANY MODEL TO ACTIVATE):`;
+  list.innerHTML = models
+    .map(
+      (m) =>
+        `<button class="chip scanned-model-chip" data-model="${providerId}/${m}" data-info="Click to activate ${providerId}/${m} in OpenCode.">${m}</button>`
+    )
+    .join('');
+
+  list.querySelectorAll('.scanned-model-chip').forEach((chip) => {
+    chip.addEventListener('click', async () => {
+      await window.studioAPI.setDefaultModel(chip.dataset.model);
+      appendTerm(`\n[Activated scanned model: ${chip.dataset.model}]\n`);
       await refreshSystemStatus();
     });
   });
@@ -239,7 +466,7 @@ async function refreshFreeModels() {
         </div>
         <div class="model-desc">${m.strengths} — <em>${m.howToUse}</em></div>
       </div>
-      <button class="bl-btn bl-btn-orange use-free-model-btn" data-id="${m.id}">Use Model</button>
+      <button class="bl-btn bl-btn-orange use-free-model-btn" data-id="${m.id}" data-info="Set ${m.id} as your active OpenCode coding model.">Use Model</button>
     `;
     curatedEl.appendChild(row);
   }
@@ -261,7 +488,7 @@ async function refreshFreeModels() {
             <span class="bl-tag">Context: ${m.context}</span>
           </div>
         </div>
-        <button class="bl-btn bl-btn-blue use-free-model-btn" data-id="${m.id}">Use Model</button>
+        <button class="bl-btn bl-btn-blue use-free-model-btn" data-id="${m.id}" data-info="Activate live free model ${m.id}.">Use Model</button>
       `;
       liveEl.appendChild(row);
     });
@@ -287,6 +514,37 @@ async function refreshFallbackChain() {
     statusEl.textContent = `Last Auto-Switch: ${fb.lastStatus.fromModel} → ${fb.lastStatus.toModel} (${fb.lastStatus.reason}) at ${fb.lastStatus.lastSwitchAt}`;
   } else {
     statusEl.textContent = `Active Chain Ready (${(fb.chain || []).length} ranked free models). Auto-switches immediately on HTTP 429 / Quota Exhausted.`;
+  }
+}
+
+async function refreshCloudAccount() {
+  const acct = await window.studioAPI.getCloudAccount();
+  const topLbl = document.getElementById('cloudTopLabel');
+  const topDot = document.getElementById('cloudDot');
+  const box = document.getElementById('cloudAccountStatusBox');
+  const gistInp = document.getElementById('inpSyncGistId');
+
+  if (acct && acct.signedIn) {
+    topDot.classList.add('online');
+    topLbl.textContent = `${acct.provider === 'github' ? 'GitHub' : 'Google'}: ${acct.username}`;
+    box.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="color:#5fb878;">Signed in via ${acct.provider.toUpperCase()} as ${acct.displayName} (@${acct.username})</strong>
+          <div style="font-size:11px; color:#9d9d9d; margin-top:2px;">
+            ${acct.gistId ? `Secret Gist ID: <code>${acct.gistId}</code>` : acct.syncFolder ? `Sync Folder: <code>${acct.syncFolder}</code>` : 'Ready to push first cloud snapshot'}
+            ${acct.lastSyncedAt ? ` • Last Synced: ${acct.lastSyncedAt}` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    if (acct.gistId && gistInp && !gistInp.value) {
+      gistInp.value = acct.gistId;
+    }
+  } else {
+    topDot.classList.remove('online');
+    topLbl.textContent = 'Sign In (GitHub / Google)';
+    box.textContent = 'Not signed in yet. Sign in with GitHub or Google below to sync your workspace across PCs.';
   }
 }
 
@@ -331,13 +589,13 @@ async function refreshBugReports() {
   }
 }
 
-// Catch any renderer-side error and feed into Auto-Bug Reporter
 window.addEventListener('error', (e) => {
   document.getElementById('inpBugTitle').value = `UI Error: ${e.message}`;
-  document.getElementById('inpBugDesc').value = `${e.filename}:${e.lineno}:${e.colno}\n${e.error && e.error.stack ? e.error.stack : ''}`;
+  document.getElementById('inpBugDesc').value = `${e.filename}:${e.lineno}:${e.colno}\n${
+    e.error && e.error.stack ? e.error.stack : ''
+  }`;
 });
 
-// Startup modal: checks updates & missing apps/drivers on launch without blocking UI
 async function runStartupCheck(forceShow = false) {
   const modal = document.getElementById('startupModal');
   const body = document.getElementById('modalBody');
@@ -387,6 +645,8 @@ async function runStartupCheck(forceShow = false) {
 }
 
 // Event Listeners
+document.getElementById('btnCloudTopPill').addEventListener('click', () => switchTab('cloud'));
+document.getElementById('btnQuickScanKeyJump').addEventListener('click', () => switchTab('keys'));
 document.getElementById('btnCheckUpdatesTop').addEventListener('click', () => runStartupCheck(true));
 document.getElementById('btnCloseModal').addEventListener('click', () => {
   document.getElementById('startupModal').classList.add('hidden');
@@ -408,6 +668,13 @@ document.getElementById('btnModalUpdateNow').addEventListener('click', async () 
 document.getElementById('btnConnectGatewayQuick').addEventListener('click', async () => {
   const res = await window.studioAPI.connectLocalGatewayToOpenCode();
   appendTerm(`\n[Connected OpenCode V2 to Smart Local Gateway: ${res.endpoint} (${res.model})]\n`);
+  await refreshSystemStatus();
+  await refreshGatewayTelemetry();
+});
+
+document.getElementById('btnConnectAllIdes').addEventListener('click', async () => {
+  const res = await window.studioAPI.connectAllIdesToGateway();
+  appendTerm(`\n[Configured All IDEs to Smart Gateway (:4141/v1) -> ${res.scriptPath}]\n`);
   await refreshSystemStatus();
   await refreshGatewayTelemetry();
 });
@@ -477,11 +744,26 @@ document.querySelectorAll('.chip[data-model]').forEach((chip) => {
   });
 });
 
+document.getElementById('btnScanCustomKeyModels').addEventListener('click', async () => {
+  const id = document.getElementById('custProviderId').value.trim() || 'openrouter';
+  const apiKey = document.getElementById('custApiKey').value.trim();
+  const baseURL = document.getElementById('custBaseUrl').value.trim();
+  appendTerm(`\n[Scanning models unlocked by your ${id} API key…]\n`);
+  const res = await window.studioAPI.discoverModelsFromKey({ id, apiKey, baseURL });
+  if (res.ok && res.models && res.models.length > 0) {
+    appendTerm(`\n[Success! Read ${res.count} models from your ${id} API key]\n`);
+    showScannedModelsBox(res.providerId, res.models);
+    await refreshProviders();
+  } else {
+    appendTerm(`\n[Could not read models from key: ${res.error || 'Check key or endpoint'}]\n`);
+  }
+});
+
 document.getElementById('btnAddCustomModel').addEventListener('click', async () => {
   const providerId = document.getElementById('custProviderId').value.trim();
   const modelId = document.getElementById('custModelId').value.trim();
   if (!providerId || !modelId) {
-    appendTerm('\n[Please enter both Provider ID and Model ID.]\n');
+    appendTerm('\n[Enter both Provider ID and Model ID, or click "Scan & Read All Models in My API Key" first.]\n');
     return;
   }
   const res = await window.studioAPI.addCustomModel({
@@ -559,6 +841,65 @@ document.getElementById('btnInstallUniversalPlugin').addEventListener('click', a
   await refreshSystemStatus();
 });
 
+// Cloud Sign-In & Sync Listeners
+document.getElementById('btnSignInGitHub').addEventListener('click', async () => {
+  const token = document.getElementById('inpCloudGithubToken').value.trim();
+  const res = await window.studioAPI.signInCloud({ provider: 'github', token });
+  if (res.ok) {
+    appendTerm(`\n[Signed in with GitHub as @${res.account.username}]\n`);
+    await refreshCloudAccount();
+  } else {
+    appendTerm(`\n[GitHub Sign-In: ${res.message || res.error}]\n`);
+  }
+});
+
+document.getElementById('btnSignInGoogle').addEventListener('click', async () => {
+  const email = document.getElementById('inpCloudGoogleEmail').value.trim() || 'Google Drive User';
+  const res = await window.studioAPI.signInCloud({ provider: 'google', email });
+  if (res.ok) {
+    appendTerm(`\n[Signed in with Google Cloud Sync (${res.account.syncFolder})]\n`);
+    await refreshCloudAccount();
+  }
+});
+
+document.getElementById('btnSignOutCloud').addEventListener('click', async () => {
+  await window.studioAPI.signOutCloud();
+  appendTerm('\n[Signed out of Cloud Sync]\n');
+  await refreshCloudAccount();
+});
+
+document.getElementById('btnPushCloudSync').addEventListener('click', async () => {
+  const passphrase = document.getElementById('inpSyncPassphrase').value.trim();
+  appendTerm('\n[Uploading encrypted workspace snapshot to Cloud…]\n');
+  const res = await window.studioAPI.pushCloudSync({ passphrase });
+  if (res.ok) {
+    if (res.gistId) document.getElementById('inpSyncGistId').value = res.gistId;
+    appendTerm(`\n[Cloud Sync Saved! ${res.url || res.filePath}]\n`);
+    await refreshCloudAccount();
+  } else {
+    appendTerm(`\n[Cloud Sync error: ${res.error}]\n`);
+  }
+});
+
+document.getElementById('btnPullCloudSync').addEventListener('click', async () => {
+  const passphrase = document.getElementById('inpSyncPassphrase').value.trim();
+  const gistId = document.getElementById('inpSyncGistId').value.trim();
+  appendTerm('\n[Restoring workspace snapshot from Cloud…]\n');
+  const res = await window.studioAPI.pullCloudSync({ passphrase, gistId });
+  if (res.ok) {
+    appendTerm('\n[Workspace restored from Cloud!]\n');
+    await Promise.all([
+      refreshSystemStatus(),
+      refreshProviders(),
+      refreshFallbackChain(),
+      refreshCloudAccount(),
+      loadSavedNodePositions()
+    ]);
+  } else {
+    appendTerm(`\n[Cloud Restore error: ${res.error}]\n`);
+  }
+});
+
 document.getElementById('btnPickProjectDir').addEventListener('click', async () => {
   const dir = await window.studioAPI.pickDirectory();
   if (dir) document.getElementById('inpProjectPath').value = dir;
@@ -610,8 +951,18 @@ document.getElementById('chkTokenCompress').addEventListener('change', async (e)
   await refreshGatewayTelemetry();
 });
 
+document.getElementById('chkPromptCache').addEventListener('change', async (e) => {
+  await window.studioAPI.updateGatewaySettings({ promptCacheEnabled: e.target.checked });
+  await refreshGatewayTelemetry();
+});
+
 document.getElementById('chkAutoBugCapture').addEventListener('change', async (e) => {
   await window.studioAPI.updateGatewaySettings({ autoBugReport: e.target.checked });
+});
+
+document.getElementById('btnClearCacheSmall').addEventListener('click', async () => {
+  await window.studioAPI.clearPromptCache();
+  await refreshGatewayTelemetry();
 });
 
 document.getElementById('btnOpenGitHubRepo').addEventListener('click', () => {
@@ -620,7 +971,7 @@ document.getElementById('btnOpenGitHubRepo').addEventListener('click', () => {
 
 // Bug Reporter controls
 document.getElementById('btnSubmitGitHubIssue').addEventListener('click', async () => {
-  const title = document.getElementById('inpBugTitle').value.trim() || 'Bug Report from OpenCode Studio v2.0';
+  const title = document.getElementById('inpBugTitle').value.trim() || 'Bug Report from OpenCode Studio v3.0';
   const description = document.getElementById('inpBugDesc').value.trim();
   const steps = document.getElementById('inpBugSteps').value.trim();
   const res = await window.studioAPI.reportBugToGitHub({ title, description, steps });
@@ -684,12 +1035,15 @@ document.getElementById('btnToggleDock').addEventListener('click', () => {
 
 // Initialize on load: instant local render (<5ms), non-blocking background checks
 (async function init() {
+  initDraggableNodes();
   await Promise.all([
     refreshSystemStatus(),
     refreshProviders(),
     refreshFallbackChain(),
     refreshGatewayTelemetry(),
-    refreshBugReports()
+    refreshCloudAccount(),
+    refreshBugReports(),
+    loadSavedNodePositions()
   ]);
   refreshFreeModels();
   setTimeout(() => runStartupCheck(false), 500);

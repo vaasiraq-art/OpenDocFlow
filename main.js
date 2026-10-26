@@ -4,7 +4,8 @@ const fs = require('fs');
 const os = require('os');
 const http = require('http');
 const https = require('https');
-const { spawn, execFile } = require('child_process');
+const crypto = require('crypto');
+const { spawn } = require('child_process');
 const jsonc = require('jsonc-parser');
 
 const GITHUB_REPO = 'vaasiraq-art/opencode-studio';
@@ -14,24 +15,81 @@ let mainWindow = null;
 let activeTerminalProc = null;
 let gatewayServer = null;
 
-// Live Gateway Telemetry & 3-Layer Resilience State
 const gatewayState = {
   running: false,
   port: GATEWAY_PORT,
   endpoint: `http://127.0.0.1:${GATEWAY_PORT}/v1`,
   strategy: 'smart-coding',
   compressionEnabled: true,
+  promptCacheEnabled: true,
   autoBugReport: true,
   requestsTotal: 0,
+  cacheHits: 0,
   failoversSaved: 0,
   tokensSaved: 0,
+  avgLatencyMs: 0,
   lastGoodModel: null,
   roundRobinIndex: 0,
-  circuitBreakers: {}, // providerId -> { failures, openUntil }
-  keyCooldowns: {}, // providerId -> cooldownUntil
-  modelLockouts: {}, // modelRef -> lockoutUntil
+  keyPoolIndices: {},
+  circuitBreakers: {},
+  keyCooldowns: {},
+  modelLockouts: {},
   recentEvents: []
 };
+
+const promptMemoryCache = new Map();
+
+function getStudioDataDir() {
+  const dir = path.join(app.getPath('userData'), 'studio-data');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function getKeysDir() {
+  const dir = path.join(getStudioDataDir(), 'keys');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function getTelemetryFilePath() {
+  return path.join(getStudioDataDir(), 'gateway-telemetry.json');
+}
+
+function loadPersistedTelemetry() {
+  try {
+    const f = getTelemetryFilePath();
+    if (fs.existsSync(f)) {
+      const saved = JSON.parse(fs.readFileSync(f, 'utf8'));
+      gatewayState.requestsTotal = Number(saved.requestsTotal) || 0;
+      gatewayState.cacheHits = Number(saved.cacheHits) || 0;
+      gatewayState.failoversSaved = Number(saved.failoversSaved) || 0;
+      gatewayState.tokensSaved = Number(saved.tokensSaved) || 0;
+      gatewayState.avgLatencyMs = Number(saved.avgLatencyMs) || 0;
+      if (saved.strategy) gatewayState.strategy = saved.strategy;
+    }
+  } catch (_) {}
+}
+
+function savePersistedTelemetry() {
+  try {
+    fs.writeFileSync(
+      getTelemetryFilePath(),
+      JSON.stringify(
+        {
+          requestsTotal: gatewayState.requestsTotal,
+          cacheHits: gatewayState.cacheHits,
+          failoversSaved: gatewayState.failoversSaved,
+          tokensSaved: gatewayState.tokensSaved,
+          avgLatencyMs: gatewayState.avgLatencyMs,
+          strategy: gatewayState.strategy
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+  } catch (_) {}
+}
 
 function recordGatewayEvent(type, detail) {
   gatewayState.recentEvents.unshift({
@@ -42,6 +100,7 @@ function recordGatewayEvent(type, detail) {
   if (gatewayState.recentEvents.length > 40) {
     gatewayState.recentEvents.length = 40;
   }
+  savePersistedTelemetry();
 }
 
 function validateSender(event) {
@@ -62,18 +121,6 @@ function getOpenCodeConfigDir() {
   if (process.env.OPENCODE_CONFIG_DIR) return process.env.OPENCODE_CONFIG_DIR;
   if (process.env.XDG_CONFIG_HOME) return path.join(process.env.XDG_CONFIG_HOME, 'opencode');
   return path.join(os.homedir(), '.config', 'opencode');
-}
-
-function getStudioDataDir() {
-  const dir = path.join(app.getPath('userData'), 'studio-data');
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
-function getKeysDir() {
-  const dir = path.join(getStudioDataDir(), 'keys');
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
 }
 
 function getBugLogPath() {
@@ -140,14 +187,18 @@ function sendTerminal(text, stream = 'stdout') {
   }
 }
 
-function fetchJson(url, timeoutMs = 8000) {
+function fetchJsonWithHeaders(url, customHeaders = {}, timeoutMs = 9000) {
   return new Promise((resolve, reject) => {
-    const req = https.get(
-      url,
+    const target = new URL(url);
+    const isHttps = target.protocol === 'https:';
+    const lib = isHttps ? https : http;
+    const req = lib.get(
+      target,
       {
         headers: {
-          'User-Agent': 'OpenCode-Studio/2.0.0',
-          Accept: 'application/json'
+          'User-Agent': 'OpenCode-Studio/3.0.0',
+          Accept: 'application/json',
+          ...customHeaders
         },
         timeout: timeoutMs
       },
@@ -156,7 +207,7 @@ function fetchJson(url, timeoutMs = 8000) {
         res.on('data', (chunk) => (body += chunk));
         res.on('end', () => {
           try {
-            resolve(JSON.parse(body));
+            resolve({ status: res.statusCode, data: JSON.parse(body) });
           } catch (e) {
             reject(e);
           }
@@ -164,29 +215,30 @@ function fetchJson(url, timeoutMs = 8000) {
       }
     );
     req.on('error', reject);
-    req.on('timeout', () => {
-      req.destroy(new Error('Request timed out'));
-    });
+    req.on('timeout', () => req.destroy(new Error('Request timed out')));
   });
 }
 
+// ============================================================================
+// EXPANDED 20+ FREE & PAID FRONTIER CODING PROVIDERS CATALOG
+// ============================================================================
 const PROVIDER_CATALOG = [
   {
     id: 'google',
-    name: 'Google AI Studio (Gemini)',
+    name: 'Google AI Studio (Gemini 2.5)',
     tier: 'Free & Paid',
     badge: 'FREE 1M CONTEXT',
     envKey: 'GEMINI_API_KEY',
     keyUrl: 'https://aistudio.google.com/app/apikey',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     builtin: true,
-    defaultModels: ['gemini-2.5-pro', 'gemini-2.5-flash']
+    defaultModels: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite-preview-06-17']
   },
   {
     id: 'openrouter',
     name: 'OpenRouter (All Free & Paid Models)',
     tier: 'Free & Paid',
-    badge: '35+ FREE CODING MODELS',
+    badge: '40+ FREE CODING MODELS',
     envKey: 'OPENROUTER_API_KEY',
     keyUrl: 'https://openrouter.ai/keys',
     baseURL: 'https://openrouter.ai/api/v1',
@@ -195,6 +247,8 @@ const PROVIDER_CATALOG = [
       'qwen/qwen3-coder:free',
       'deepseek/deepseek-r1:free',
       'deepseek/deepseek-chat-v3-0324:free',
+      'z-ai/glm-4.5-air:free',
+      'moonshotai/kimi-k2:free',
       'meta-llama/llama-3.3-70b-instruct:free'
     ]
   },
@@ -208,7 +262,12 @@ const PROVIDER_CATALOG = [
     baseURL: 'https://api.groq.com/openai/v1',
     package: '@opencode/ai/providers/openai-compatible',
     builtin: false,
-    defaultModels: ['llama-3.3-70b-versatile', 'qwen-qwq-32b', 'deepseek-r1-distill-llama-70b']
+    defaultModels: [
+      'llama-3.3-70b-versatile',
+      'moonshotai/kimi-k2-instruct',
+      'qwen-qwq-32b',
+      'deepseek-r1-distill-llama-70b'
+    ]
   },
   {
     id: 'cerebras',
@@ -220,7 +279,31 @@ const PROVIDER_CATALOG = [
     baseURL: 'https://api.cerebras.ai/v1',
     package: '@opencode/ai/providers/openai-compatible',
     builtin: false,
-    defaultModels: ['qwen-3-coder-480b', 'llama-3.3-70b']
+    defaultModels: ['qwen-3-coder-480b', 'qwen-3-235b-a22b', 'llama-3.3-70b']
+  },
+  {
+    id: 'sambanova',
+    name: 'SambaNova Cloud (RDU Fast Free Tier)',
+    tier: 'Free & Paid',
+    badge: 'FREE RDU TIER',
+    envKey: 'SAMBANOVA_API_KEY',
+    keyUrl: 'https://cloud.sambanova.ai/apis',
+    baseURL: 'https://api.sambanova.ai/v1',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['DeepSeek-R1', 'DeepSeek-V3-0324', 'Qwen2.5-Coder-32B-Instruct', 'Meta-Llama-3.3-70B-Instruct']
+  },
+  {
+    id: 'chutes',
+    name: 'Chutes.ai (Serverless Open-Weights)',
+    tier: 'Free & Paid',
+    badge: 'FREE OPEN WEIGHTS',
+    envKey: 'CHUTES_API_KEY',
+    keyUrl: 'https://chutes.ai/',
+    baseURL: 'https://llm.chutes.ai/v1',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['deepseek-ai/DeepSeek-V3-0324', 'deepseek-ai/DeepSeek-R1', 'Qwen/Qwen3-235B-A22B']
   },
   {
     id: 'github-models',
@@ -232,11 +315,11 @@ const PROVIDER_CATALOG = [
     baseURL: 'https://models.inference.ai.azure.com',
     package: '@opencode/ai/providers/openai-compatible',
     builtin: false,
-    defaultModels: ['gpt-4o', 'DeepSeek-R1', 'Codestral-2501']
+    defaultModels: ['gpt-4o', 'o3-mini', 'DeepSeek-R1', 'Codestral-2501']
   },
   {
     id: 'mistral',
-    name: 'Mistral AI (La Plateforme / Codestral)',
+    name: 'Mistral AI (Codestral & Devstral)',
     tier: 'Free & Paid',
     badge: 'FREE EXPERIMENT TIER',
     envKey: 'MISTRAL_API_KEY',
@@ -244,7 +327,7 @@ const PROVIDER_CATALOG = [
     baseURL: 'https://api.mistral.ai/v1',
     package: '@opencode/ai/providers/openai-compatible',
     builtin: false,
-    defaultModels: ['codestral-latest', 'mistral-large-latest']
+    defaultModels: ['codestral-latest', 'devstral-small-latest', 'mistral-large-latest']
   },
   {
     id: 'nvidia',
@@ -256,7 +339,7 @@ const PROVIDER_CATALOG = [
     baseURL: 'https://integrate.api.nvidia.com/v1',
     package: '@opencode/ai/providers/openai-compatible',
     builtin: false,
-    defaultModels: ['qwen/qwen2.5-coder-32b-instruct', 'deepseek-ai/deepseek-r1']
+    defaultModels: ['qwen/qwen2.5-coder-32b-instruct', 'deepseek-ai/deepseek-r1', 'nvidia/llama-3.1-nemotron-ultra-253b-v1']
   },
   {
     id: 'kimi',
@@ -271,31 +354,79 @@ const PROVIDER_CATALOG = [
     defaultModels: ['kimi-k2-0711-preview', 'moonshot-v1-128k']
   },
   {
+    id: 'zhipu',
+    name: 'Z.ai / Zhipu (GLM-4.5 Coding & Flash)',
+    tier: 'Free & Paid',
+    badge: 'GLM-4-FLASH FREE',
+    envKey: 'ZHIPU_API_KEY',
+    keyUrl: 'https://open.bigmodel.cn/',
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['glm-4.5', 'glm-4-flash', 'codegeex-4']
+  },
+  {
+    id: 'together',
+    name: 'Together AI (Open-Weights Cloud)',
+    tier: 'Free Credits & Paid',
+    badge: 'FAST CODERS',
+    envKey: 'TOGETHER_API_KEY',
+    keyUrl: 'https://api.together.xyz/settings/api-keys',
+    baseURL: 'https://api.together.xyz/v1',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['Qwen/Qwen2.5-Coder-32B-Instruct', 'deepseek-ai/DeepSeek-R1', 'deepseek-ai/DeepSeek-V3']
+  },
+  {
+    id: 'fireworks',
+    name: 'Fireworks AI (Ultra-Low Latency)',
+    tier: 'Free Credits & Paid',
+    badge: 'FIREATTENTION',
+    envKey: 'FIREWORKS_API_KEY',
+    keyUrl: 'https://fireworks.ai/account/api-keys',
+    baseURL: 'https://api.fireworks.ai/inference/v1',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['accounts/fireworks/models/qwen3-235b-a22b', 'accounts/fireworks/models/deepseek-v3']
+  },
+  {
+    id: 'hyperbolic',
+    name: 'Hyperbolic AI',
+    tier: 'Free Credits & Paid',
+    badge: 'OPEN WEIGHTS',
+    envKey: 'HYPERBOLIC_API_KEY',
+    keyUrl: 'https://app.hyperbolic.xyz/settings',
+    baseURL: 'https://api.hyperbolic.xyz/v1',
+    package: '@opencode/ai/providers/openai-compatible',
+    builtin: false,
+    defaultModels: ['Qwen/Qwen2.5-Coder-32B-Instruct', 'deepseek-ai/DeepSeek-R1']
+  },
+  {
     id: 'anthropic',
-    name: 'Anthropic (Claude Sonnet / Opus)',
+    name: 'Anthropic (Claude 4.5 Opus / Sonnet)',
     tier: 'Paid',
-    badge: 'TOP CODING PAID',
+    badge: 'FRONTIER CODING PAID',
     envKey: 'ANTHROPIC_API_KEY',
     keyUrl: 'https://console.anthropic.com/settings/keys',
-    baseURL: '',
+    baseURL: 'https://api.anthropic.com/v1',
     builtin: true,
-    defaultModels: ['claude-sonnet-4-5', 'claude-opus-4-5']
+    defaultModels: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-3-7-sonnet-latest']
   },
   {
     id: 'openai',
-    name: 'OpenAI (GPT / Codex)',
+    name: 'OpenAI (GPT-5 / GPT-4.1 / o3 / o4-mini)',
     tier: 'Paid',
-    badge: 'PAID / PLUS',
+    badge: 'FRONTIER PAID',
     envKey: 'OPENAI_API_KEY',
     keyUrl: 'https://platform.openai.com/api-keys',
     baseURL: 'https://api.openai.com/v1',
     builtin: true,
-    defaultModels: ['gpt-5', 'gpt-4.1', 'o4-mini']
+    defaultModels: ['gpt-5', 'gpt-4.1', 'o3', 'o4-mini']
   },
   {
     id: 'deepseek',
-    name: 'DeepSeek Platform (V3 / R1)',
-    tier: 'Paid (Low Cost)',
+    name: 'DeepSeek Official (V3.1 & R1)',
+    tier: 'Paid (Ultra Low Cost)',
     badge: 'ULTRA LOW COST',
     envKey: 'DEEPSEEK_API_KEY',
     keyUrl: 'https://platform.deepseek.com/api_keys',
@@ -306,20 +437,20 @@ const PROVIDER_CATALOG = [
   },
   {
     id: 'xai',
-    name: 'xAI (Grok Coding)',
+    name: 'xAI (Grok 4 & Grok 3 Coding)',
     tier: 'Paid',
-    badge: 'GROK',
+    badge: 'GROK CODER',
     envKey: 'XAI_API_KEY',
     keyUrl: 'https://console.x.ai/',
     baseURL: 'https://api.x.ai/v1',
     builtin: true,
-    defaultModels: ['grok-3', 'grok-3-mini']
+    defaultModels: ['grok-4', 'grok-3', 'grok-3-mini']
   },
   {
     id: 'ollama',
-    name: 'Ollama (Local Offline Models)',
+    name: 'Ollama (Local Offline GPU/CPU)',
     tier: 'Free Local',
-    badge: '100% FREE LOCAL',
+    badge: '100% FREE OFFLINE',
     envKey: 'OLLAMA_API_KEY',
     keyUrl: 'https://ollama.com/library',
     baseURL: 'http://127.0.0.1:11434/v1',
@@ -331,9 +462,9 @@ const PROVIDER_CATALOG = [
     id: 'lmstudio',
     name: 'LM Studio (Local GGUF Server)',
     tier: 'Free Local',
-    badge: '100% FREE LOCAL',
+    badge: '100% FREE OFFLINE',
     envKey: 'LMSTUDIO_API_KEY',
-    keyUrl: 'https://lmstudio.ai/',
+    keyUrl: 'http://127.0.0.1:1234/v1',
     baseURL: 'http://127.0.0.1:1234/v1',
     builtin: true,
     localNoKey: true,
@@ -344,17 +475,17 @@ const PROVIDER_CATALOG = [
 const CURATED_FREE_CODING_MODELS = [
   {
     rank: 1,
-    tierLabel: 'S+ Tier (Best Overall Free)',
+    tierLabel: 'S+ Tier (Best 1M Context Architect)',
     id: 'google/gemini-2.5-pro',
     provider: 'google',
     name: 'Gemini 2.5 Pro (Google AI Studio Free Tier)',
     context: '1,000,000',
-    strengths: '1M context window, full repository reasoning, multi-file architecture & debugging.',
-    howToUse: 'Add a free Google AI Studio key and click Use Model.'
+    strengths: '1M token context, full-repo architecture, complex multi-file coding & debugging.',
+    howToUse: 'Add one or more free Google AI Studio keys and click Use Model.'
   },
   {
     rank: 2,
-    tierLabel: 'S+ Tier (Best Open-Weights Coder)',
+    tierLabel: 'S+ Tier (Best Open-Weights Agentic Coder)',
     id: 'openrouter/qwen/qwen3-coder:free',
     provider: 'openrouter',
     name: 'Qwen 3 Coder 480B A35B (Free via OpenRouter / Cerebras)',
@@ -364,26 +495,46 @@ const CURATED_FREE_CODING_MODELS = [
   },
   {
     rank: 3,
-    tierLabel: 'S Tier (Deep Reasoning & Math/Systems)',
-    id: 'openrouter/deepseek/deepseek-r1:free',
+    tierLabel: 'S+ Tier (1M Context Agentic Coder)',
+    id: 'openrouter/moonshotai/kimi-k2:free',
     provider: 'openrouter',
-    name: 'DeepSeek R1 (Free via OpenRouter / GitHub / NVIDIA)',
-    context: '163,840',
-    strengths: 'Root-cause bug hunting, complex algorithms, C++/Rust/systems engineering.',
-    howToUse: 'Add a free OpenRouter key and click Use Model.'
+    name: 'Kimi K2 1T MoE (Free via OpenRouter / Groq)',
+    context: '131,072',
+    strengths: 'Moonshot AI 1T-parameter MoE built specifically for agentic tool use & coding.',
+    howToUse: 'Add an OpenRouter or Groq key and click Use Model.'
   },
   {
     rank: 4,
-    tierLabel: 'S Tier (Fast Daily Coding Driver)',
-    id: 'openrouter/deepseek/deepseek-chat-v3-0324:free',
+    tierLabel: 'S Tier (Deep Reasoning & Systems Code)',
+    id: 'openrouter/deepseek/deepseek-r1:free',
     provider: 'openrouter',
-    name: 'DeepSeek V3 0324 (Free via OpenRouter)',
+    name: 'DeepSeek R1 (Free via OpenRouter / SambaNova / Chutes)',
     context: '163,840',
-    strengths: 'Clean, fast full-stack code generation across TS, Python, C#, GDScript.',
-    howToUse: 'Add a free OpenRouter key and click Use Model.'
+    strengths: 'Root-cause bug hunting, complex algorithms, C++/Rust/systems engineering.',
+    howToUse: 'Add an OpenRouter, SambaNova, or Chutes key and click Use Model.'
   },
   {
     rank: 5,
+    tierLabel: 'S Tier (Fast Full-Stack Daily Driver)',
+    id: 'openrouter/deepseek/deepseek-chat-v3-0324:free',
+    provider: 'openrouter',
+    name: 'DeepSeek V3 0324 (Free via OpenRouter / Chutes)',
+    context: '163,840',
+    strengths: 'Clean, fast full-stack code generation across TS, Python, C#, GDScript.',
+    howToUse: 'Add an OpenRouter key and click Use Model.'
+  },
+  {
+    rank: 6,
+    tierLabel: 'S Tier (Agentic Full-Stack Coder)',
+    id: 'openrouter/z-ai/glm-4.5-air:free',
+    provider: 'openrouter',
+    name: 'GLM-4.5 Air / Flash (Free via OpenRouter / Z.ai)',
+    context: '131,072',
+    strengths: 'High-speed UI & web application generation with native tool calling.',
+    howToUse: 'Add an OpenRouter or Z.ai key and click Use Model.'
+  },
+  {
+    rank: 7,
     tierLabel: 'A+ Tier (High-Speed 1M Agentic)',
     id: 'google/gemini-2.5-flash',
     provider: 'google',
@@ -393,7 +544,7 @@ const CURATED_FREE_CODING_MODELS = [
     howToUse: 'Add a free Google AI Studio key and click Use Model.'
   },
   {
-    rank: 6,
+    rank: 8,
     tierLabel: 'A+ Tier (2000 tok/s Wafer-Scale)',
     id: 'cerebras/qwen-3-coder-480b',
     provider: 'cerebras',
@@ -403,17 +554,17 @@ const CURATED_FREE_CODING_MODELS = [
     howToUse: 'Add a free Cerebras key and click Use Model.'
   },
   {
-    rank: 7,
-    tierLabel: 'A+ Tier (80+ Languages Specialist)',
+    rank: 9,
+    tierLabel: 'A+ Tier (80+ Languages & Diffs)',
     id: 'mistral/codestral-latest',
     provider: 'mistral',
-    name: 'Mistral Codestral (Mistral Free Tier)',
+    name: 'Mistral Codestral 25.01 & Devstral (Mistral Free Tier)',
     context: '256,000',
     strengths: '256K context, fast code edits, diffs, and unit test generation.',
     howToUse: 'Add a free Mistral AI key and click Use Model.'
   },
   {
-    rank: 8,
+    rank: 10,
     tierLabel: 'A Tier (Instant LPU Inference)',
     id: 'groq/llama-3.3-70b-versatile',
     provider: 'groq',
@@ -423,17 +574,17 @@ const CURATED_FREE_CODING_MODELS = [
     howToUse: 'Add a free Groq key and click Use Model.'
   },
   {
-    rank: 9,
-    tierLabel: 'A Tier (Compact Reasoning LPU)',
-    id: 'groq/qwen-qwq-32b',
-    provider: 'groq',
-    name: 'Qwen QwQ 32B Reasoning (Groq Free Tier)',
+    rank: 11,
+    tierLabel: 'A Tier (RDU Fast Free Inference)',
+    id: 'sambanova/Qwen2.5-Coder-32B-Instruct',
+    provider: 'sambanova',
+    name: 'Qwen 2.5 Coder 32B Instruct (SambaNova Free Tier)',
     context: '128,000',
-    strengths: 'Step-by-step reasoning at LPU speed.',
-    howToUse: 'Add a free Groq key and click Use Model.'
+    strengths: 'High-accuracy 32B coder running on SambaNova RDU hardware.',
+    howToUse: 'Add a free SambaNova key and click Use Model.'
   },
   {
-    rank: 10,
+    rank: 12,
     tierLabel: 'B+ Tier (100% Offline Local GPU/CPU)',
     id: 'ollama/qwen2.5-coder:14b',
     provider: 'ollama',
@@ -464,8 +615,26 @@ function writeConfigModify(jsonPath, value) {
   fs.writeFileSync(cfgPath, updated, 'utf8');
 }
 
+// Supports Multi-Key Pooling: a .key file can hold 1 key or multiple keys (one per line)
+function readProviderKeyPool(providerId) {
+  const keyFile = path.join(getKeysDir(), `${providerId}.key`);
+  if (!fs.existsSync(keyFile)) return [];
+  return fs
+    .readFileSync(keyFile, 'utf8')
+    .split(/\r?\n|,/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+function pickKeyFromPool(providerId) {
+  const pool = readProviderKeyPool(providerId);
+  if (pool.length === 0) return '';
+  const idx = (gatewayState.keyPoolIndices[providerId] || 0) % pool.length;
+  gatewayState.keyPoolIndices[providerId] = idx + 1;
+  return pool[idx];
+}
+
 function syncEnvFile() {
-  const keysDir = getKeysDir();
   const metaPath = path.join(getStudioDataDir(), 'providers-meta.json');
   let meta = {};
   if (fs.existsSync(metaPath)) {
@@ -473,12 +642,11 @@ function syncEnvFile() {
       meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
     } catch (_) {}
   }
-  const lines = ['# Generated by OpenCode Studio - Keep private, never commit'];
+  const lines = ['# Generated by OpenCode Studio v3.0 - Keep private, never commit'];
   for (const [id, info] of Object.entries(meta)) {
-    const keyFile = path.join(keysDir, `${id}.key`);
-    if (fs.existsSync(keyFile) && info.envKey) {
-      const val = fs.readFileSync(keyFile, 'utf8').trim();
-      if (val) lines.push(`${info.envKey}=${val}`);
+    const pool = readProviderKeyPool(id);
+    if (pool.length > 0 && info.envKey) {
+      lines.push(`${info.envKey}=${pool[0]}`);
     }
   }
   const envPath = path.join(getOpenCodeConfigDir(), '.env');
@@ -487,8 +655,8 @@ function syncEnvFile() {
 }
 
 // ============================================================================
-// BUILT-IN ZERO-BLOAT LOCAL SMART AI GATEWAY (http://127.0.0.1:4141/v1)
-// Compresses redundant tool output tokens & auto-fails over across 3 layers
+// STREAMING + MULTI-PROTOCOL + KEY-POOLING SMART GATEWAY (:4141/v1)
+// Supports OpenAI (/v1/chat/completions) AND Anthropic (/v1/messages) + SSE
 // ============================================================================
 function compressMessagesPayload(bodyObj) {
   if (!gatewayState.compressionEnabled || !bodyObj || !Array.isArray(bodyObj.messages)) {
@@ -496,7 +664,7 @@ function compressMessagesPayload(bodyObj) {
   }
   let savedChars = 0;
   const compressed = bodyObj.messages.map((msg) => {
-    if (typeof msg.content === 'string' && msg.content.length > 1200 && (msg.role === 'tool' || msg.role === 'user')) {
+    if (typeof msg.content === 'string' && msg.content.length > 1000 && (msg.role === 'tool' || msg.role === 'user')) {
       const origLen = msg.content.length;
       const cleaned = msg.content
         .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
@@ -521,7 +689,6 @@ function getConfiguredFallbackCandidates() {
     } catch (_) {}
   }
 
-  const keysDir = getKeysDir();
   const now = Date.now();
   const candidates = [];
 
@@ -531,17 +698,13 @@ function getConfiguredFallbackCandidates() {
     const providerId = fullRef.slice(0, slash);
     const modelId = fullRef.slice(slash + 1);
 
-    // Check Layer 3: Model lockout
     if ((gatewayState.modelLockouts[fullRef] || 0) > now) continue;
-    // Check Layer 2: Key cooldown
     if ((gatewayState.keyCooldowns[providerId] || 0) > now) continue;
-    // Check Layer 1: Provider circuit breaker
     const cb = gatewayState.circuitBreakers[providerId];
     if (cb && cb.openUntil > now) continue;
 
     const cat = PROVIDER_CATALOG.find((p) => p.id === providerId);
-    const keyFile = path.join(keysDir, `${providerId}.key`);
-    const apiKey = fs.existsSync(keyFile) ? fs.readFileSync(keyFile, 'utf8').trim() : '';
+    const apiKey = pickKeyFromPool(providerId);
 
     if (!apiKey && !(cat && cat.localNoKey)) continue;
     const baseURL = (cat && cat.baseURL) || 'https://openrouter.ai/api/v1';
@@ -563,7 +726,8 @@ function forwardUpstreamChat(candidate, requestBodyObj) {
     const targetUrl = new URL(candidate.baseURL.replace(/\/+$/, '') + '/chat/completions');
     const payload = JSON.stringify({
       ...requestBodyObj,
-      model: candidate.modelId
+      model: candidate.modelId,
+      stream: false
     });
     const isHttps = targetUrl.protocol === 'https:';
     const lib = isHttps ? https : http;
@@ -576,6 +740,7 @@ function forwardUpstreamChat(candidate, requestBodyObj) {
       headers['Authorization'] = `Bearer ${candidate.apiKey}`;
     }
 
+    const t0 = Date.now();
     const req = lib.request(
       targetUrl,
       {
@@ -587,6 +752,10 @@ function forwardUpstreamChat(candidate, requestBodyObj) {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
+          const dt = Date.now() - t0;
+          gatewayState.avgLatencyMs = gatewayState.avgLatencyMs
+            ? Math.round(gatewayState.avgLatencyMs * 0.7 + dt * 0.3)
+            : dt;
           resolve({
             status: res.statusCode || 500,
             headers: res.headers,
@@ -607,8 +776,92 @@ function forwardUpstreamChat(candidate, requestBodyObj) {
   });
 }
 
+function convertOpenAiResponseToSseStream(res, openAiJsonBuffer, routedModel) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Studio-Routed-Model': routedModel
+  });
+  try {
+    const parsed = JSON.parse(openAiJsonBuffer.toString('utf8'));
+    const choice = (parsed.choices && parsed.choices[0]) || {};
+    const msg = choice.message || {};
+    const chunk = {
+      id: parsed.id || `chatcmpl_${Date.now()}`,
+      object: 'chat.completion.chunk',
+      created: parsed.created || Math.floor(Date.now() / 1000),
+      model: routedModel,
+      choices: [
+        {
+          index: 0,
+          delta: {
+            role: 'assistant',
+            content: msg.content || '',
+            ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {})
+          },
+          finish_reason: choice.finish_reason || 'stop'
+        }
+      ]
+    };
+    res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    res.write('data: [DONE]\n\n');
+  } catch (_) {
+    res.write('data: [DONE]\n\n');
+  }
+  res.end();
+}
+
+function translateAnthropicRequestToOpenAI(anthBody) {
+  const messages = [];
+  if (anthBody.system) {
+    const sysText = Array.isArray(anthBody.system)
+      ? anthBody.system.map((b) => b.text || '').join('\n')
+      : String(anthBody.system);
+    messages.push({ role: 'system', content: sysText });
+  }
+  for (const m of anthBody.messages || []) {
+    const text = Array.isArray(m.content)
+      ? m.content.map((b) => b.text || JSON.stringify(b)).join('\n')
+      : String(m.content || '');
+    messages.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: text });
+  }
+  return {
+    model: anthBody.model || 'auto-coding',
+    messages,
+    max_tokens: anthBody.max_tokens || 4096,
+    temperature: anthBody.temperature,
+    stream: false
+  };
+}
+
+function translateOpenAIResponseToAnthropic(openAiBuffer, routedModel) {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(openAiBuffer.toString('utf8'));
+  } catch (_) {}
+  const choice = (parsed.choices && parsed.choices[0]) || {};
+  const text = (choice.message && choice.message.content) || '';
+  return Buffer.from(
+    JSON.stringify({
+      id: parsed.id || `msg_${Date.now()}`,
+      type: 'message',
+      role: 'assistant',
+      model: routedModel,
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+      usage: {
+        input_tokens: (parsed.usage && parsed.usage.prompt_tokens) || 0,
+        output_tokens: (parsed.usage && parsed.usage.completion_tokens) || 0
+      }
+    })
+  );
+}
+
 function startLocalSmartGateway() {
   if (gatewayServer) return;
+  loadPersistedTelemetry();
+
   gatewayServer = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -631,6 +884,7 @@ function startLocalSmartGateway() {
         { id: 'auto-coding', object: 'model', owned_by: 'opencode-studio' },
         { id: 'auto', object: 'model', owned_by: 'opencode-studio' },
         { id: 'auto-fast', object: 'model', owned_by: 'opencode-studio' },
+        { id: 'auto-fusion', object: 'model', owned_by: 'opencode-studio' },
         ...CURATED_FREE_CODING_MODELS.map((m) => ({ id: m.id, object: 'model', owned_by: m.provider }))
       ];
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -638,23 +892,51 @@ function startLocalSmartGateway() {
       return;
     }
 
-    if (req.method === 'POST' && req.url.startsWith('/v1/chat/completions')) {
+    const isAnthropicWire = req.method === 'POST' && req.url.startsWith('/v1/messages');
+    const isOpenAiWire = req.method === 'POST' && req.url.startsWith('/v1/chat/completions');
+
+    if (isOpenAiWire || isAnthropicWire) {
       const chunks = [];
       req.on('data', (c) => chunks.push(c));
       req.on('end', async () => {
         gatewayState.requestsTotal++;
-        let bodyObj = {};
+        let rawObj = {};
         try {
-          bodyObj = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          rawObj = JSON.parse(Buffer.concat(chunks).toString('utf8'));
         } catch (_) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: { message: 'Invalid JSON body' } }));
           return;
         }
 
-        const { bodyObj: compressedBody, savedChars } = compressMessagesPayload(bodyObj);
+        const clientRequestedStream = Boolean(rawObj.stream) && !isAnthropicWire;
+        const openAiBody = isAnthropicWire ? translateAnthropicRequestToOpenAI(rawObj) : rawObj;
+
+        const { bodyObj: compressedBody, savedChars } = compressMessagesPayload(openAiBody);
         if (savedChars > 0) {
           gatewayState.tokensSaved += Math.ceil(savedChars / 4);
+        }
+
+        // Check Local SHA-256 Prompt Cache for identical non-tool requests
+        const cacheKey = crypto
+          .createHash('sha256')
+          .update(JSON.stringify(compressedBody.messages || []))
+          .digest('hex');
+
+        if (gatewayState.promptCacheEnabled && promptMemoryCache.has(cacheKey)) {
+          const cached = promptMemoryCache.get(cacheKey);
+          gatewayState.cacheHits++;
+          recordGatewayEvent('cache-hit', `0ms Prompt Cache Hit (${cached.model})`);
+          if (clientRequestedStream) {
+            convertOpenAiResponseToSseStream(res, cached.body, cached.model);
+          } else if (isAnthropicWire) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(translateOpenAIResponseToAnthropic(cached.body, cached.model));
+          } else {
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Studio-Cache': 'HIT' });
+            res.end(cached.body);
+          }
+          return;
         }
 
         const candidates = getConfiguredFallbackCandidates();
@@ -677,27 +959,48 @@ function startLocalSmartGateway() {
           if (upstream.status >= 200 && upstream.status < 300) {
             gatewayState.lastGoodModel = cand.fullRef;
             delete gatewayState.circuitBreakers[cand.providerId];
+            if (gatewayState.promptCacheEnabled) {
+              promptMemoryCache.set(cacheKey, { model: cand.fullRef, body: upstream.body });
+              if (promptMemoryCache.size > 200) {
+                const firstKey = promptMemoryCache.keys().next().value;
+                promptMemoryCache.delete(firstKey);
+              }
+            }
             if (i > 0) {
               gatewayState.failoversSaved++;
               recordGatewayEvent('failover-success', `Rerouted seamlessly to ${cand.fullRef}`);
             } else {
-              recordGatewayEvent('served', `Served by ${cand.fullRef}`);
+              recordGatewayEvent('served', `Served by ${cand.fullRef} (${gatewayState.avgLatencyMs}ms)`);
             }
-            res.writeHead(upstream.status, {
-              'Content-Type': upstream.headers['content-type'] || 'application/json',
-              'X-Studio-Routed-Model': cand.fullRef,
-              'X-Studio-Strategy': gatewayState.strategy
-            });
-            res.end(upstream.body);
+
+            if (clientRequestedStream) {
+              convertOpenAiResponseToSseStream(res, upstream.body, cand.fullRef);
+            } else if (isAnthropicWire) {
+              res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Studio-Routed-Model': cand.fullRef
+              });
+              res.end(translateOpenAIResponseToAnthropic(upstream.body, cand.fullRef));
+            } else {
+              res.writeHead(upstream.status, {
+                'Content-Type': upstream.headers['content-type'] || 'application/json',
+                'X-Studio-Routed-Model': cand.fullRef,
+                'X-Studio-Strategy': gatewayState.strategy
+              });
+              res.end(upstream.body);
+            }
             return;
           }
 
-          // Handle 3-Layer Resilience on error
+          // 3-Layer Self-Healing Resilience
           const now = Date.now();
           if (upstream.status === 429 || upstream.status === 402) {
-            gatewayState.modelLockouts[cand.fullRef] = now + 10 * 60 * 1000;
-            gatewayState.keyCooldowns[cand.providerId] = now + 15 * 1000;
-            recordGatewayEvent('quota-lockout', `${cand.fullRef} hit HTTP ${upstream.status} -> switching next free model`);
+            const poolSize = readProviderKeyPool(cand.providerId).length;
+            if (poolSize <= 1) {
+              gatewayState.modelLockouts[cand.fullRef] = now + 10 * 60 * 1000;
+              gatewayState.keyCooldowns[cand.providerId] = now + 15 * 1000;
+            }
+            recordGatewayEvent('quota-lockout', `${cand.fullRef} hit HTTP ${upstream.status} -> rotating key/model`);
           } else if (upstream.status >= 500) {
             const prev = gatewayState.circuitBreakers[cand.providerId] || { failures: 0, openUntil: 0 };
             prev.failures++;
@@ -723,18 +1026,18 @@ function startLocalSmartGateway() {
 
   gatewayServer.listen(GATEWAY_PORT, '127.0.0.1', () => {
     gatewayState.running = true;
-    recordGatewayEvent('gateway-online', `Smart AI Gateway listening on http://127.0.0.1:${GATEWAY_PORT}/v1`);
+    recordGatewayEvent('gateway-online', `Smart Streaming Gateway listening on http://127.0.0.1:${GATEWAY_PORT}/v1`);
   });
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1420,
-    height: 900,
-    minWidth: 1080,
-    minHeight: 700,
+    width: 1460,
+    height: 920,
+    minWidth: 1120,
+    minHeight: 720,
     backgroundColor: '#181818',
-    title: 'OpenCode Studio v2.0 — Blender Workspace Edition',
+    title: 'OpenCode Studio v3.0 — Blender 3D AI Gateway & Agent Hub',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
@@ -864,7 +1167,7 @@ ipcMain.handle('studio:get-status', async (event) => {
       category: 'Core Runtime',
       required: true,
       installed: Boolean(nodeBin),
-      version: nodeBin ? `Node (${nodeBin})` : 'Not installed',
+      version: nodeBin ? `Node Installed` : 'Not installed',
       description: 'Required for OpenCode plugins, skills CLI, and REA MCP.'
     },
     {
@@ -952,11 +1255,11 @@ ipcMain.handle('studio:check-updates', async (event) => {
   const status = await Promise.all(
     packages.map(async (pkg) => {
       try {
-        const meta = await fetchJson(`https://registry.npmjs.org/${encodeURIComponent(pkg.id)}/latest`, 4500);
+        const res = await fetchJsonWithHeaders(`https://registry.npmjs.org/${encodeURIComponent(pkg.id)}/latest`, {}, 4500);
         return {
           id: pkg.id,
           label: pkg.label,
-          latest: (meta && meta.version) || 'unknown'
+          latest: (res.data && res.data.version) || 'unknown'
         };
       } catch (_) {
         return { id: pkg.id, label: pkg.label, latest: 'unknown' };
@@ -1030,7 +1333,6 @@ function runStreamedProcess(command, args, cwd) {
   });
 }
 
-// IPC: Install selected prerequisites / drivers
 ipcMain.handle('studio:install-prereqs', async (event, ids = []) => {
   if (!validateSender(event)) return { ok: false };
   const results = [];
@@ -1195,7 +1497,7 @@ function fetchTextUrl(url, timeoutMs = 15000) {
     const req = https.get(
       url,
       {
-        headers: { 'User-Agent': 'OpenCode-Studio-Universal-Importer/2.0.0' },
+        headers: { 'User-Agent': 'OpenCode-Studio-Universal-Importer/3.0.0' },
         timeout: timeoutMs
       },
       (res) => {
@@ -1220,29 +1522,20 @@ function fetchTextUrl(url, timeoutMs = 15000) {
 function normalizeToOpenCodeSkillMarkdown(rawContent, skillId, description) {
   const trimmed = String(rawContent || '').trim();
   const cleanTitle = skillId.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-  const cleanDesc = (description || `Universal imported skill (${cleanTitle}) for OpenCode, Claude Code, Codex & AI Agents`).replace(/"/g, "'");
+  const cleanDesc = (
+    description || `Universal imported skill (${cleanTitle}) for OpenCode, Claude Code, Codex & AI Agents`
+  ).replace(/"/g, "'");
   if (trimmed.startsWith('---') && /name\s*:/.test(trimmed.slice(0, 400))) {
     return trimmed + '\n';
   }
-  return [
-    '---',
-    `name: ${cleanTitle}`,
-    `description: "${cleanDesc}"`,
-    '---',
-    '',
-    `# ${cleanTitle}`,
-    '',
-    trimmed,
-    ''
-  ].join('\n');
+  return ['---', `name: ${cleanTitle}`, `description: "${cleanDesc}"`, '---', '', `# ${cleanTitle}`, '', trimmed, ''].join(
+    '\n'
+  );
 }
 
 function writeUniversalSkillEverywhere(skillId, skillMarkdown, syncAllAgents = true) {
   const cleanId = skillId.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
-  const targets = [
-    path.join(getOpenCodeConfigDir(), 'skills', cleanId),
-    path.join(os.homedir(), '.agents', 'skills', cleanId)
-  ];
+  const targets = [path.join(getOpenCodeConfigDir(), 'skills', cleanId), path.join(os.homedir(), '.agents', 'skills', cleanId)];
   if (syncAllAgents) {
     targets.push(
       path.join(os.homedir(), '.claude', 'skills', cleanId),
@@ -1262,7 +1555,6 @@ function writeUniversalSkillEverywhere(skillId, skillMarkdown, syncAllAgents = t
   return { cleanId, written };
 }
 
-// IPC: Universal Skill Importer (Any Web URL, GitHub Repo, Claude Code, Codex, Cursor, Windsurf, or Raw Text)
 ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
   if (!validateSender(event)) return { ok: false };
   const source = String(payload.source || '').trim();
@@ -1274,7 +1566,6 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
     return { ok: false, error: 'Provide a URL, GitHub repo, file path, or skill instructions.' };
   }
 
-  // Case 1: Direct raw text/markdown pasted by user
   if (payload.rawContent && String(payload.rawContent).trim()) {
     const id = customName || `custom-skill-${Date.now()}`;
     const md = normalizeToOpenCodeSkillMarkdown(payload.rawContent, id, customDesc);
@@ -1283,7 +1574,6 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
     return { ok: true, skillId: res.cleanId, locations: res.written };
   }
 
-  // Case 2: Local file path (.md, .mdc, .cursorrules, CLAUDE.md, AGENTS.md, SKILL.md)
   if (fs.existsSync(source) && fs.statSync(source).isFile()) {
     const raw = fs.readFileSync(source, 'utf8');
     const id = customName || path.basename(source, path.extname(source)) || 'imported-skill';
@@ -1293,10 +1583,8 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
     return { ok: true, skillId: res.cleanId, locations: res.written };
   }
 
-  // Case 3: Direct raw HTTPS URL to a file (.md, .mdc, .cursorrules, .txt, blob, raw)
   if (/^https?:\/\//i.test(source) && !/^https?:\/\/github\.com\/[^/]+\/[^/]+\/?$/i.test(source)) {
     let fetchUrl = source;
-    // Convert GitHub blob URL to raw.githubusercontent.com automatically
     const ghBlob = source.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/i);
     if (ghBlob) {
       fetchUrl = `https://raw.githubusercontent.com/${ghBlob[1]}/${ghBlob[2]}/${ghBlob[3]}/${ghBlob[4]}`;
@@ -1314,7 +1602,6 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
     }
   }
 
-  // Case 4: GitHub repo shorthand (owner/repo) or repo URL -> try skills.sh CLI first, then auto-convert repo rules
   const skillsCmd = path.join(getOpenCodeConfigDir(), 'node_modules', '.bin', 'skills.cmd');
   const parts = source.split(/\s+/);
   const cliArgs = ['add', ...parts, '-g', '-a', 'opencode', '-y', '--copy'];
@@ -1326,7 +1613,6 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
     return { ok: true, skillId: customName || parts[0], method: 'skills-cli' };
   }
 
-  // Fallback for repos without standard SKILL.md (e.g. CursorRules, Claude CLAUDE.md, Codex AGENTS.md, or README.md)
   const repoMatch = source.match(/(?:github\.com\/)?([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)/);
   if (repoMatch) {
     const owner = repoMatch[1];
@@ -1349,7 +1635,6 @@ ipcMain.handle('studio:import-universal-skill', async (event, payload = {}) => {
   return { ok: false, error: 'Could not import skill from the specified source.' };
 });
 
-// IPC: Sync & Harvest All Skills Across Claude Code, Codex, Gemini, Cursor & OpenCode on This PC
 ipcMain.handle('studio:sync-all-agent-skills', async (event) => {
   if (!validateSender(event)) return { ok: false };
   const searchRoots = [
@@ -1385,24 +1670,23 @@ ipcMain.handle('studio:sync-all-agent-skills', async (event) => {
   }
 
   const unique = Array.from(new Set(synced));
-  sendTerminal(`\n[Universal Cross-Agent Sync complete: ${unique.length} skills unified across OpenCode, Claude Code, Codex & Gemini]\n`);
+  sendTerminal(
+    `\n[Universal Cross-Agent Sync complete: ${unique.length} skills unified across OpenCode, Claude Code, Codex & Gemini]\n`
+  );
   return { ok: true, count: unique.length, skills: unique };
 });
 
-// IPC: Universal Plugin Installer + V1-to-V2 Compatibility Bridge
 ipcMain.handle('studio:install-universal-plugin', async (event, payload = {}) => {
   if (!validateSender(event)) return { ok: false };
   const spec = String(payload.spec || '').trim();
   const wrapV2 = payload.wrapV2 !== false;
   if (!spec) return { ok: false, error: 'Enter an npm plugin package, GitHub URL, or local file path.' };
 
-  // Try native opencode plugin add first
   const res = await runStreamedProcess('opencode', ['plugin', 'add', spec]);
   if (res.ok) {
     return { ok: true, spec, method: 'native' };
   }
 
-  // If native add failed (e.g. V1 plugin or custom script/repo), generate a safe OpenCode V2 bridge plugin
   if (wrapV2) {
     const cleanName = spec.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
     const pluginsDir = path.join(getOpenCodeConfigDir(), 'plugins');
@@ -1434,10 +1718,9 @@ ipcMain.handle('studio:install-universal-plugin', async (event, payload = {}) =>
   return { ok: false, error: 'Plugin installation failed.' };
 });
 
-// IPC: Providers & API Key Manager
+// IPC: Providers & Multi-Key Pool Manager + Live Key Model Auto-Discovery
 ipcMain.handle('studio:get-providers', async (event) => {
   if (!validateSender(event)) return null;
-  const keysDir = getKeysDir();
   const metaPath = path.join(getStudioDataDir(), 'providers-meta.json');
   let customMeta = {};
   if (fs.existsSync(metaPath)) {
@@ -1454,14 +1737,15 @@ ipcMain.handle('studio:get-providers', async (event) => {
   const cfgProviders = cfg.providers || {};
 
   const merged = PROVIDER_CATALOG.map((p) => {
-    const keyFile = path.join(keysDir, `${p.id}.key`);
-    const hasKey = fs.existsSync(keyFile) && fs.readFileSync(keyFile, 'utf8').trim().length > 0;
+    const pool = readProviderKeyPool(p.id);
+    const hasKey = pool.length > 0;
     const cfgP = cfgProviders[p.id] || {};
     const extraModels = cfgP.models ? Object.keys(cfgP.models) : [];
     const allModels = Array.from(new Set([...(p.defaultModels || []), ...extraModels]));
     return {
       ...p,
       hasKey,
+      keyCount: pool.length,
       baseURL: (cfgP.settings && cfgP.settings.baseURL) || p.baseURL || '',
       models: allModels
     };
@@ -1469,8 +1753,7 @@ ipcMain.handle('studio:get-providers', async (event) => {
 
   for (const [id, pCfg] of Object.entries(cfgProviders)) {
     if (!merged.some((m) => m.id === id)) {
-      const keyFile = path.join(keysDir, `${id}.key`);
-      const hasKey = fs.existsSync(keyFile) && fs.readFileSync(keyFile, 'utf8').trim().length > 0;
+      const pool = readProviderKeyPool(id);
       merged.push({
         id,
         name: pCfg.name || id,
@@ -1480,7 +1763,8 @@ ipcMain.handle('studio:get-providers', async (event) => {
         keyUrl: '',
         baseURL: (pCfg.settings && pCfg.settings.baseURL) || '',
         builtin: false,
-        hasKey,
+        hasKey: pool.length > 0,
+        keyCount: pool.length,
         models: pCfg.models ? Object.keys(pCfg.models) : []
       });
     }
@@ -1490,6 +1774,113 @@ ipcMain.handle('studio:get-providers', async (event) => {
     currentModel: cfg.model || '',
     providers: merged
   };
+});
+
+async function queryModelsFromProviderEndpoint(providerId, apiKey, customBaseUrl) {
+  const cat = PROVIDER_CATALOG.find((c) => c.id === providerId);
+  const base = (customBaseUrl || (cat && cat.baseURL) || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const firstKey = String(apiKey || '')
+    .split(/\r?\n|,/)[0]
+    .trim();
+
+  // Special handling for Google Gemini native model list if needed, or OpenAI-compatible /models
+  if (providerId === 'google' && firstKey) {
+    try {
+      const res = await fetchJsonWithHeaders(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(firstKey)}`
+      );
+      if (res.data && Array.isArray(res.data.models)) {
+        return res.data.models
+          .map((m) => String(m.name || '').replace(/^models\//, ''))
+          .filter((id) => id.includes('gemini'));
+      }
+    } catch (_) {}
+  }
+
+  const headers = {};
+  if (firstKey) {
+    if (providerId === 'anthropic') {
+      headers['x-api-key'] = firstKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else {
+      headers['Authorization'] = `Bearer ${firstKey}`;
+    }
+  }
+
+  const res = await fetchJsonWithHeaders(`${base}/models`, headers, 9000);
+  const rawList = (res.data && (res.data.data || res.data.models)) || (Array.isArray(res.data) ? res.data : []);
+  return rawList
+    .map((m) => (typeof m === 'string' ? m : m.id || m.name))
+    .filter(Boolean)
+    .slice(0, 80);
+}
+
+// IPC: Live API Key Model Auto-Discovery ("Read the Models in My API Key")
+ipcMain.handle('studio:discover-key-models', async (event, payload = {}) => {
+  if (!validateSender(event)) return { ok: false };
+  const cleanId = String(payload.id || 'openrouter')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '-');
+  let keyToUse = String(payload.apiKey || '').trim();
+  const baseURL = String(payload.baseURL || '').trim();
+
+  const keysDir = getKeysDir();
+  const keyFile = path.join(keysDir, `${cleanId}.key`);
+  if (keyToUse) {
+    fs.writeFileSync(keyFile, keyToUse, 'utf8');
+    syncEnvFile();
+  } else {
+    const existingPool = readProviderKeyPool(cleanId);
+    keyToUse = existingPool[0] || '';
+  }
+
+  try {
+    const discovered = await queryModelsFromProviderEndpoint(cleanId, keyToUse, baseURL);
+    if (discovered.length > 0) {
+      // Save provider & discovered models into opencode.jsonc automatically
+      const catalogEntry = PROVIDER_CATALOG.find((c) => c.id === cleanId);
+      const isBuiltin = Boolean(catalogEntry && catalogEntry.builtin);
+      let cfg = {};
+      try {
+        cfg = jsonc.parse(readConfigText()) || {};
+      } catch (_) {}
+      const existingProvider = (cfg.providers && cfg.providers[cleanId]) || {};
+      const providerObj = { ...existingProvider };
+      if (!isBuiltin) {
+        providerObj.name = (catalogEntry && catalogEntry.name) || cleanId;
+        providerObj.package = (catalogEntry && catalogEntry.package) || '@opencode/ai/providers/openai-compatible';
+      }
+      providerObj.settings = { ...(providerObj.settings || {}) };
+      if (fs.existsSync(keyFile)) {
+        providerObj.settings.apiKey = `{file:${keyFile.replace(/\\/g, '/')}}`;
+      }
+      if (baseURL) {
+        providerObj.settings.baseURL = baseURL;
+      } else if (catalogEntry && catalogEntry.baseURL && !isBuiltin) {
+        providerObj.settings.baseURL = catalogEntry.baseURL;
+      }
+
+      providerObj.models = { ...(providerObj.models || {}) };
+      for (const mId of discovered.slice(0, 35)) {
+        providerObj.models[mId] = { modelID: mId, name: mId };
+      }
+      writeConfigModify(['providers', cleanId], providerObj);
+    }
+
+    return {
+      ok: true,
+      providerId: cleanId,
+      count: discovered.length,
+      models: discovered
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      providerId: cleanId,
+      error: err.message || 'Could not query /models endpoint with this key.'
+    };
+  }
 });
 
 ipcMain.handle('studio:save-provider', async (event, payload) => {
@@ -1617,12 +2008,12 @@ ipcMain.handle('studio:add-custom-model', async (event, payload) => {
   return { ok: true, fullRef };
 });
 
-// IPC: Ranked Free Coding Models
 ipcMain.handle('studio:fetch-free-models', async (event) => {
   if (!validateSender(event)) return null;
   let liveFree = [];
   try {
-    const data = await fetchJson('https://openrouter.ai/api/v1/models');
+    const res = await fetchJsonWithHeaders('https://openrouter.ai/api/v1/models');
+    const data = res.data;
     if (data && Array.isArray(data.data)) {
       const freeRaw = data.data.filter((m) => {
         const p = m.pricing || {};
@@ -1634,9 +2025,10 @@ ipcMain.handle('studio:fetch-free-models', async (event) => {
       const scoreModel = (m) => {
         const idName = `${m.id} ${m.name || ''} ${m.description || ''}`.toLowerCase();
         let score = 0;
-        if (idName.includes('coder') || idName.includes('codestral')) score += 500;
-        if (idName.includes('qwen3') || idName.includes('qwen-3') || idName.includes('qwen2.5')) score += 350;
-        if (idName.includes('deepseek')) score += 340;
+        if (idName.includes('coder') || idName.includes('codestral') || idName.includes('devstral')) score += 500;
+        if (idName.includes('qwen3') || idName.includes('qwen-3') || idName.includes('kimi-k2') || idName.includes('glm-4.5'))
+          score += 380;
+        if (idName.includes('deepseek')) score += 350;
         if (idName.includes('gemini-2.5') || idName.includes('gemini-2.0')) score += 320;
         if (idName.includes('claude') || idName.includes('gpt-4')) score += 300;
         if (idName.includes('llama-3.3') || idName.includes('llama-4')) score += 260;
@@ -1654,7 +2046,7 @@ ipcMain.handle('studio:fetch-free-models', async (event) => {
           score: scoreModel(m)
         }))
         .sort((a, b) => b.score - a.score)
-        .slice(0, 35);
+        .slice(0, 40);
     }
   } catch (_) {}
 
@@ -1664,7 +2056,6 @@ ipcMain.handle('studio:fetch-free-models', async (event) => {
   };
 });
 
-// IPC: Auto-Fallback Free Model Chain
 ipcMain.handle('studio:get-fallback-chain', async (event) => {
   if (!validateSender(event)) return null;
   const cfgDir = getOpenCodeConfigDir();
@@ -1755,7 +2146,7 @@ ipcMain.handle('studio:switch-next-free-model', async (event) => {
   return { ok: true, ...statusObj };
 });
 
-// IPC: Local Smart Gateway Telemetry & Controls
+// IPC: Local Smart Gateway Telemetry, Cache & Multi-IDE Auto-Configurator
 ipcMain.handle('studio:get-gateway-telemetry', async (event) => {
   if (!validateSender(event)) return null;
   return gatewayState;
@@ -1765,9 +2156,17 @@ ipcMain.handle('studio:update-gateway-settings', async (event, settings = {}) =>
   if (!validateSender(event)) return { ok: false };
   if (settings.strategy) gatewayState.strategy = settings.strategy;
   if (typeof settings.compressionEnabled === 'boolean') gatewayState.compressionEnabled = settings.compressionEnabled;
+  if (typeof settings.promptCacheEnabled === 'boolean') gatewayState.promptCacheEnabled = settings.promptCacheEnabled;
   if (typeof settings.autoBugReport === 'boolean') gatewayState.autoBugReport = settings.autoBugReport;
   recordGatewayEvent('settings-updated', `Strategy=${gatewayState.strategy}, Compression=${gatewayState.compressionEnabled}`);
   return { ok: true, ...gatewayState };
+});
+
+ipcMain.handle('studio:clear-prompt-cache', async (event) => {
+  if (!validateSender(event)) return { ok: false };
+  promptMemoryCache.clear();
+  recordGatewayEvent('cache-cleared', 'Prompt cache cleared');
+  return { ok: true };
 });
 
 ipcMain.handle('studio:connect-local-gateway', async (event) => {
@@ -1781,7 +2180,7 @@ ipcMain.handle('studio:connect-local-gateway', async (event) => {
     models: {
       'auto-coding': {
         modelID: 'auto-coding',
-        name: 'Auto Coding Combo (3-Layer Self-Healing)'
+        name: 'Auto Coding Combo (3-Layer Self-Healing + Streaming)'
       },
       auto: {
         modelID: 'auto',
@@ -1793,6 +2192,394 @@ ipcMain.handle('studio:connect-local-gateway', async (event) => {
   writeConfigModify(['model'], 'studio-gateway/auto-coding');
   recordGatewayEvent('opencode-connected', 'Connected OpenCode V2 to http://127.0.0.1:4141/v1 (studio-gateway/auto-coding)');
   return { ok: true, model: 'studio-gateway/auto-coding', endpoint: gatewayState.endpoint };
+});
+
+// 1-Click Connect All IDEs (OpenCode V2, Claude Code, Codex, Cursor/Cline/Aider env script)
+ipcMain.handle('studio:connect-all-ides', async (event) => {
+  if (!validateSender(event)) return { ok: false };
+  const gatewayProvider = {
+    name: 'OpenCode Studio Smart Gateway',
+    package: '@opencode/ai/providers/openai-compatible',
+    settings: { baseURL: `http://127.0.0.1:${GATEWAY_PORT}/v1` },
+    models: {
+      'auto-coding': { modelID: 'auto-coding', name: 'Auto Coding Combo (3-Layer Self-Healing)' }
+    }
+  };
+  writeConfigModify(['providers', 'studio-gateway'], gatewayProvider);
+  writeConfigModify(['model'], 'studio-gateway/auto-coding');
+
+  const cfgDir = getOpenCodeConfigDir();
+  const idePs1 = path.join(cfgDir, 'ide-gateway-env.ps1');
+  const ps1Content = [
+    '# OpenCode Studio v3.0 - Universal IDE Gateway Environment',
+    '$env:OPENAI_BASE_URL = "http://127.0.0.1:4141/v1"',
+    '$env:OPENAI_API_BASE = "http://127.0.0.1:4141/v1"',
+    '$env:OPENAI_API_KEY = "studio-local-gateway"',
+    '$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:4141"',
+    '$env:ANTHROPIC_API_KEY = "studio-local-gateway"',
+    'Write-Host "Connected shell to OpenCode Studio Smart Gateway (http://127.0.0.1:4141/v1)" -ForegroundColor Green'
+  ].join('\n');
+  fs.writeFileSync(idePs1, ps1Content, 'utf8');
+
+  sendTerminal(
+    `\n[Connected OpenCode V2 + generated Claude Code / Codex / Cursor / Aider gateway script at ${idePs1}]\n`
+  );
+  recordGatewayEvent('all-ides-connected', 'Configured OpenCode V2 + Claude/Codex/Cursor/Aider gateway profile');
+  return { ok: true, scriptPath: idePs1 };
+});
+
+// Interactive Blender Node Graph Layout Persistence
+ipcMain.handle('studio:get-node-graph', async (event) => {
+  if (!validateSender(event)) return null;
+  const f = path.join(getStudioDataDir(), 'blender-node-graph.json');
+  if (fs.existsSync(f)) {
+    try {
+      return JSON.parse(fs.readFileSync(f, 'utf8'));
+    } catch (_) {}
+  }
+  return null;
+});
+
+ipcMain.handle('studio:save-node-graph', async (event, graph) => {
+  if (!validateSender(event)) return { ok: false };
+  const f = path.join(getStudioDataDir(), 'blender-node-graph.json');
+  fs.writeFileSync(f, JSON.stringify(graph, null, 2), 'utf8');
+  return { ok: true };
+});
+
+// ============================================================================
+// CLOUD SIGN-IN (GITHUB / GOOGLE) & AES-256-GCM CROSS-PC SYNC
+// ============================================================================
+function getCloudAccountFile() {
+  return path.join(getStudioDataDir(), 'cloud-account.json');
+}
+
+function loadCloudAccount() {
+  const f = getCloudAccountFile();
+  if (!fs.existsSync(f)) return { signedIn: false };
+  try {
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch (_) {
+    return { signedIn: false };
+  }
+}
+
+function saveCloudAccount(obj) {
+  fs.writeFileSync(getCloudAccountFile(), JSON.stringify(obj, null, 2), 'utf8');
+}
+
+function encryptWithPassphrase(plainText, passphrase) {
+  const salt = crypto.randomBytes(16);
+  const iv = crypto.randomBytes(12);
+  const key = crypto.pbkdf2Sync(String(passphrase), salt, 100000, 32, 'sha256');
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const enc = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return {
+    alg: 'AES-256-GCM',
+    salt: salt.toString('base64'),
+    iv: iv.toString('base64'),
+    tag: tag.toString('base64'),
+    data: enc.toString('base64')
+  };
+}
+
+function decryptWithPassphrase(encObj, passphrase) {
+  const salt = Buffer.from(encObj.salt, 'base64');
+  const iv = Buffer.from(encObj.iv, 'base64');
+  const tag = Buffer.from(encObj.tag, 'base64');
+  const data = Buffer.from(encObj.data, 'base64');
+  const key = crypto.pbkdf2Sync(String(passphrase), salt, 100000, 32, 'sha256');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+}
+
+ipcMain.handle('studio:get-cloud-account', async (event) => {
+  if (!validateSender(event)) return { signedIn: false };
+  return loadCloudAccount();
+});
+
+ipcMain.handle('studio:cloud-signout', async (event) => {
+  if (!validateSender(event)) return { ok: false };
+  saveCloudAccount({ signedIn: false });
+  const ghCloudKey = path.join(getKeysDir(), 'cloud-github.key');
+  if (fs.existsSync(ghCloudKey)) fs.unlinkSync(ghCloudKey);
+  return { ok: true };
+});
+
+ipcMain.handle('studio:cloud-signin', async (event, payload = {}) => {
+  if (!validateSender(event)) return { ok: false };
+  const provider = payload.provider || 'github';
+
+  if (provider === 'github') {
+    let token = String(payload.token || '').trim();
+    if (!token) {
+      const ghPool = readProviderKeyPool('github-models');
+      if (ghPool.length > 0) token = ghPool[0];
+    }
+    if (!token) {
+      await shell.openExternal('https://github.com/settings/tokens/new?scopes=gist,repo&description=OpenCode+Studio+Cloud+Sync');
+      return {
+        ok: false,
+        needsToken: true,
+        message: 'Opened GitHub Token page in browser. Generate a token with "gist" scope and paste it to complete sign-in.'
+      };
+    }
+
+    try {
+      const userRes = await fetchJsonWithHeaders('https://api.github.com/user', {
+        Authorization: `Bearer ${token}`
+      });
+      if (userRes.status === 200 && userRes.data && userRes.data.login) {
+        fs.writeFileSync(path.join(getKeysDir(), 'cloud-github.key'), token, 'utf8');
+        const current = loadCloudAccount();
+        const acct = {
+          signedIn: true,
+          provider: 'github',
+          username: userRes.data.login,
+          displayName: userRes.data.name || userRes.data.login,
+          avatarUrl: userRes.data.avatar_url || '',
+          gistId: current.gistId || '',
+          lastSyncedAt: current.lastSyncedAt || null
+        };
+        saveCloudAccount(acct);
+        return { ok: true, account: acct };
+      }
+      return { ok: false, error: 'GitHub token rejected or invalid.' };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  // Google Account / Google Drive Cloud Folder Sign-In
+  if (provider === 'google') {
+    const email = String(payload.email || 'Google Drive Sync User').trim();
+    const defaultDrive =
+      [
+        path.join(os.homedir(), 'Google Drive'),
+        path.join(os.homedir(), 'My Drive'),
+        path.join(os.homedir(), 'OneDrive')
+      ].find((d) => fs.existsSync(d)) || getStudioDataDir();
+    const syncFolder = String(payload.syncFolder || defaultDrive).trim();
+    const acct = {
+      signedIn: true,
+      provider: 'google',
+      username: email,
+      displayName: email,
+      syncFolder,
+      lastSyncedAt: null
+    };
+    saveCloudAccount(acct);
+    return { ok: true, account: acct };
+  }
+
+  return { ok: false, error: 'Unsupported cloud provider' };
+});
+
+function buildCloudSyncBundle(passphrase = '') {
+  const cfgDir = getOpenCodeConfigDir();
+  const chainFile = path.join(cfgDir, 'free-fallback-chain.json');
+  const graphFile = path.join(getStudioDataDir(), 'blender-node-graph.json');
+  const skillsDir = path.join(os.homedir(), '.agents', 'skills');
+
+  const bundle = {
+    version: '3.0.0',
+    exportedAt: new Date().toISOString(),
+    strategy: gatewayState.strategy,
+    compressionEnabled: gatewayState.compressionEnabled,
+    fallbackChain: fs.existsSync(chainFile) ? JSON.parse(fs.readFileSync(chainFile, 'utf8')) : null,
+    nodeGraph: fs.existsSync(graphFile) ? JSON.parse(fs.readFileSync(graphFile, 'utf8')) : null,
+    installedSkills: fs.existsSync(skillsDir)
+      ? fs
+          .readdirSync(skillsDir, { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name)
+      : []
+  };
+
+  if (passphrase && String(passphrase).trim()) {
+    const allKeys = {};
+    const kDir = getKeysDir();
+    if (fs.existsSync(kDir)) {
+      for (const f of fs.readdirSync(kDir)) {
+        if (f.endsWith('.key') && f !== 'cloud-github.key') {
+          const id = f.replace(/\.key$/, '');
+          allKeys[id] = fs.readFileSync(path.join(kDir, f), 'utf8');
+        }
+      }
+    }
+    bundle.encryptedKeys = encryptWithPassphrase(JSON.stringify(allKeys), passphrase);
+  }
+
+  return bundle;
+}
+
+function applyCloudSyncBundle(bundle, passphrase = '') {
+  if (!bundle || typeof bundle !== 'object') return;
+  const cfgDir = getOpenCodeConfigDir();
+  fs.mkdirSync(cfgDir, { recursive: true });
+
+  if (bundle.strategy) gatewayState.strategy = bundle.strategy;
+  if (typeof bundle.compressionEnabled === 'boolean') gatewayState.compressionEnabled = bundle.compressionEnabled;
+
+  if (bundle.fallbackChain) {
+    fs.writeFileSync(path.join(cfgDir, 'free-fallback-chain.json'), JSON.stringify(bundle.fallbackChain, null, 2), 'utf8');
+  }
+  if (bundle.nodeGraph) {
+    fs.writeFileSync(path.join(getStudioDataDir(), 'blender-node-graph.json'), JSON.stringify(bundle.nodeGraph, null, 2), 'utf8');
+  }
+  if (bundle.encryptedKeys && passphrase && String(passphrase).trim()) {
+    const rawJson = decryptWithPassphrase(bundle.encryptedKeys, passphrase);
+    const keysMap = JSON.parse(rawJson);
+    const kDir = getKeysDir();
+    for (const [id, val] of Object.entries(keysMap)) {
+      fs.writeFileSync(path.join(kDir, `${id}.key`), String(val), 'utf8');
+    }
+    syncEnvFile();
+  }
+}
+
+function upsertGitHubGist(token, gistId, contentStr) {
+  return new Promise((resolve) => {
+    const payload = JSON.stringify({
+      description: 'OpenCode Studio v3.0 Encrypted Cloud Workspace Sync',
+      public: false,
+      files: {
+        'opencode-studio-sync.json': {
+          content: contentStr
+        }
+      }
+    });
+    const method = gistId ? 'PATCH' : 'POST';
+    const urlPath = gistId ? `/gists/${gistId}` : '/gists';
+
+    const req = https.request(
+      `https://api.github.com${urlPath}`,
+      {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'OpenCode-Studio-Cloud-Sync/3.0.0',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 15000
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (res.statusCode >= 200 && res.statusCode < 300 && parsed.id) {
+              resolve({ ok: true, gistId: parsed.id, url: parsed.html_url });
+            } else {
+              resolve({ ok: false, error: parsed.message || `HTTP ${res.statusCode}` });
+            }
+          } catch (e) {
+            resolve({ ok: false, error: e.message });
+          }
+        });
+      }
+    );
+    req.on('error', (err) => resolve({ ok: false, error: err.message }));
+    req.write(payload);
+    req.end();
+  });
+}
+
+ipcMain.handle('studio:cloud-push', async (event, payload = {}) => {
+  if (!validateSender(event)) return { ok: false };
+  const acct = loadCloudAccount();
+  if (!acct.signedIn) return { ok: false, error: 'Sign in with GitHub or Google first.' };
+
+  const bundle = buildCloudSyncBundle(payload.passphrase || '');
+  const jsonStr = JSON.stringify(bundle, null, 2);
+
+  if (acct.provider === 'github') {
+    const tokenFile = path.join(getKeysDir(), 'cloud-github.key');
+    const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, 'utf8').trim() : '';
+    if (!token) return { ok: false, error: 'GitHub token missing. Please sign in again.' };
+
+    const res = await upsertGitHubGist(token, acct.gistId || '', jsonStr);
+    if (!res.ok && acct.gistId) {
+      // Retry creating a fresh secret gist if previous gistId was deleted
+      const retry = await upsertGitHubGist(token, '', jsonStr);
+      if (retry.ok) {
+        acct.gistId = retry.gistId;
+        acct.lastSyncedAt = new Date().toISOString();
+        saveCloudAccount(acct);
+        return { ok: true, gistId: retry.gistId, url: retry.url, account: acct };
+      }
+      return retry;
+    }
+    if (res.ok) {
+      acct.gistId = res.gistId;
+      acct.lastSyncedAt = new Date().toISOString();
+      saveCloudAccount(acct);
+      return { ok: true, gistId: res.gistId, url: res.url, account: acct };
+    }
+    return res;
+  }
+
+  if (acct.provider === 'google') {
+    const folder = acct.syncFolder || getStudioDataDir();
+    fs.mkdirSync(folder, { recursive: true });
+    const filePath = path.join(folder, 'opencode-studio-sync.json');
+    fs.writeFileSync(filePath, jsonStr, 'utf8');
+    acct.lastSyncedAt = new Date().toISOString();
+    saveCloudAccount(acct);
+    return { ok: true, filePath, account: acct };
+  }
+
+  return { ok: false, error: 'Unknown provider' };
+});
+
+ipcMain.handle('studio:cloud-pull', async (event, payload = {}) => {
+  if (!validateSender(event)) return { ok: false };
+  const acct = loadCloudAccount();
+  if (!acct.signedIn) return { ok: false, error: 'Sign in with GitHub or Google first.' };
+
+  try {
+    if (acct.provider === 'github') {
+      const tokenFile = path.join(getKeysDir(), 'cloud-github.key');
+      const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, 'utf8').trim() : '';
+      const gistId = String(payload.gistId || acct.gistId || '').trim();
+      if (!gistId) return { ok: false, error: 'No Cloud Gist ID found. Push from your first PC or enter Gist ID.' };
+
+      const res = await fetchJsonWithHeaders(`https://api.github.com/gists/${gistId}`, {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      });
+      const fileObj = res.data && res.data.files && res.data.files['opencode-studio-sync.json'];
+      if (!fileObj || !fileObj.content) {
+        return { ok: false, error: 'Could not find opencode-studio-sync.json in that Gist.' };
+      }
+      const bundle = JSON.parse(fileObj.content);
+      applyCloudSyncBundle(bundle, payload.passphrase || '');
+      acct.gistId = gistId;
+      acct.lastSyncedAt = new Date().toISOString();
+      saveCloudAccount(acct);
+      return { ok: true, account: acct };
+    }
+
+    if (acct.provider === 'google') {
+      const folder = acct.syncFolder || getStudioDataDir();
+      const filePath = path.join(folder, 'opencode-studio-sync.json');
+      if (!fs.existsSync(filePath)) {
+        return { ok: false, error: `No sync file found at ${filePath}` };
+      }
+      const bundle = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      applyCloudSyncBundle(bundle, payload.passphrase || '');
+      acct.lastSyncedAt = new Date().toISOString();
+      saveCloudAccount(acct);
+      return { ok: true, account: acct };
+    }
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+  return { ok: false };
 });
 
 // IPC: Auto Bug Catcher & GitHub Issue Reporter
@@ -1821,7 +2608,7 @@ function postGitHubIssueWithToken(token, title, body) {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/vnd.github+json',
-          'User-Agent': 'OpenCode-Studio-Bug-Reporter/2.0.0',
+          'User-Agent': 'OpenCode-Studio-Bug-Reporter/3.0.0',
           'Content-Type': 'application/json; charset=utf-8',
           'Content-Length': Buffer.byteLength(payload)
         },
@@ -1852,12 +2639,12 @@ function postGitHubIssueWithToken(token, title, body) {
 
 ipcMain.handle('studio:report-bug-github', async (event, payload = {}) => {
   if (!validateSender(event)) return { ok: false };
-  const cleanTitle = redactSecrets(payload.title || 'Bug Report from OpenCode Studio').slice(0, 140);
+  const cleanTitle = redactSecrets(payload.title || 'Bug Report from OpenCode Studio v3.0').slice(0, 140);
   const cleanDesc = redactSecrets(payload.description || '');
   const cleanSteps = redactSecrets(payload.steps || '');
 
   const issueBody = [
-    '### Bug Report (Submitted via OpenCode Studio v2.0)',
+    '### Bug Report (Submitted via OpenCode Studio v3.0)',
     '',
     `**Summary:** ${cleanTitle}`,
     `**OS / Arch:** ${os.platform()} ${os.release()} (${os.arch()})`,
@@ -1871,17 +2658,12 @@ ipcMain.handle('studio:report-bug-github', async (event, payload = {}) => {
     cleanSteps ? `\n### Steps to Reproduce / Developer Notes\n${cleanSteps}` : ''
   ].join('\n');
 
-  // Try direct API submission if a GitHub token is saved in keys
-  const ghKeyFile = path.join(getKeysDir(), 'github-models.key');
-  if (fs.existsSync(ghKeyFile)) {
-    const token = fs.readFileSync(ghKeyFile, 'utf8').trim();
-    if (token) {
-      const apiRes = await postGitHubIssueWithToken(token, cleanTitle, issueBody);
-      if (apiRes.ok) return apiRes;
-    }
+  const ghPool = readProviderKeyPool('github-models');
+  if (ghPool.length > 0) {
+    const apiRes = await postGitHubIssueWithToken(ghPool[0], cleanTitle, issueBody);
+    if (apiRes.ok) return apiRes;
   }
 
-  // Fallback: Open pre-filled GitHub New Issue page in browser so any user/coder can submit in 1 click
   const issueUrl =
     `https://github.com/${GITHUB_REPO}/issues/new?title=` +
     encodeURIComponent(cleanTitle) +
@@ -1893,7 +2675,6 @@ ipcMain.handle('studio:report-bug-github', async (event, payload = {}) => {
   return { ok: true, url: issueUrl, method: 'browser' };
 });
 
-// IPC: Embedded Terminal & OS Helpers
 ipcMain.handle('studio:terminal-run', async (event, { cmd, cwd }) => {
   if (!validateSender(event)) return { ok: false };
   if (!cmd || !cmd.trim()) return { ok: true };
@@ -1952,7 +2733,7 @@ ipcMain.handle('studio:create-desktop-shortcut', async (event) => {
   const ok = shell.writeShortcutLink(shortcutPath, 'create', {
     target,
     cwd: path.dirname(target),
-    description: 'OpenCode Studio v2.0 - Blender Workspace AI Gateway & Coding Hub',
+    description: 'OpenCode Studio v3.0 - Blender 3D AI Gateway & Agent Hub',
     icon: target,
     iconIndex: 0
   });

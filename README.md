@@ -1,55 +1,84 @@
-# OpenCode Studio v2.0 — Blender Workspace Edition
+<div align="center">
 
-**The All-in-One Native AI Coding Gateway, Universal World Skill/Plugin Harvester, Auto-Fallback Router & Desktop Control Center for OpenCode V2.**
+# OpenCode Studio v3.0 — Blender 3D Flagship Edition
 
-- **Download Latest Windows Installer (`.exe`):** [GitHub Releases](https://github.com/vaasiraq-art/opencode-studio/releases)
-- **Report Bugs / Request Features:** [GitHub Issues](https://github.com/vaasiraq-art/opencode-studio/issues)
+**The All-in-One Native AI Coding Gateway, Multi-Key Pool Router, Live API Key Model Scanner, Universal World Skill/Plugin Harvester & Encrypted Cloud Sync Hub.**
+
+[![Download Latest Windows Installer](https://img.shields.io/badge/Download_Installer-v3.0.0_.exe-e57a24?style=for-the-badge&logo=windows)](https://github.com/vaasiraq-art/opencode-studio/releases/latest)
+[![Report Bug or Request Feature](https://img.shields.io/badge/GitHub_Issues-Report_Bug_/_PR-4772b3?style=for-the-badge&logo=github)](https://github.com/vaasiraq-art/opencode-studio/issues)
+
+<br/>
+
+<img src="./docs/preview-blender-ui.svg" alt="OpenCode Studio v3.0 Blender 3D Workspace UI" width="100%"/>
+
+</div>
 
 ---
 
-## Why OpenCode Studio v2.0?
+## Why OpenCode Studio v3.0?
 
-| Capability | OpenCode Studio v2.0 | Typical Web Proxy Routers |
+| Feature | OpenCode Studio v3.0 | Traditional Web Proxy Routers |
 | :--- | :--- | :--- |
-| **Startup & RAM Footprint** | **`0ms` local check • `<50 MB` native gateway** | Heavy 4–8 GB Node/Next.js server |
-| **User Interface** | **Blender 4.x Dark Studio Workspace** (Topbar Tabs, Outliner, Shader Node Graph, Inspector, Console) | Cluttered multi-page web dashboard |
-| **Local Smart AI Gateway** | **`http://127.0.0.1:4141/v1`** (OpenAI-compatible `/v1/chat/completions` & `/v1/models`) | Requires external daemon setup |
-| **3-Layer Self-Healing Failover** | **Provider Circuit Breaker + Key Cooldown + Per-Model Quota Lockout (`HTTP 429`/`402`/`503`)** | Manual key rotation or dropped turns |
-| **OpenCode V2 Native Plugin** | **Bundled `free-model-autoswitch.js` V2 hook (`http.response` + `retry`)** | Legacy V1 only |
-| **Universal World Skill Harvester** | **Imports skills from Claude Code, Codex, Cursor (`.cursorrules`), Windsurf, GitHub, or ANY Web URL** | Single-agent format only |
-| **Universal Plugin Bridge** | **Native OpenCode V2 plugins + automatic V1→V2 compatibility wrapper** | Breaks on V1/V2 mismatch |
-| **Reverse Engineering & Graphs** | **Bundled REA 6.8.0 (229 MCP tools) + Graphify 0.9.95** | Not included |
-| **Auto Bug Catcher & Reporter** | **Built-in runtime/command error catcher with 1-click redacted GitHub Issue submission** | Manual log hunting |
+| **Startup & Install Speed** | **`0ms` local startup • Fast unpack `.exe` • `<50 MB` RAM** | Heavy 4–8 GB Node/Next.js web server |
+| **User Interface** | **Blender 3D Dark Workspace** (Draggable Shader Nodes, SVG Bezier Wires, 3D Axis Gizmo, Outliner, Inspector, Console) | Multi-page browser dashboard |
+| **Instant Button Help** | **Floating Blender Tooltip + Bottom Status Bar explanation on every button** | Hidden docs |
+| **Live API Key Model Scanner** | **Paste any API key → Click `Scan Key Models` → Reads & activates all models inside your key** | Manual model ID typing |
+| **Multi-Key Pooling** | **Paste multiple free keys per provider → Automatic Round-Robin Key Pool rotation** | Single key bottleneck |
+| **Streaming & Protocols** | **Real SSE Streaming (`stream: true`) + OpenAI (`/v1/chat/completions`) + Anthropic (`/v1/messages`)** | Single protocol |
+| **Non-Stop Free Failover** | **3-Layer Self-Healing Gateway (`:4141/v1`) + `free-model-autoswitch.js` V2 Plugin** | Stops mid-session on 429 |
+| **Universal Skill Harvester** | **Imports skills from Claude Code, Codex, Cursor (`.cursorrules`), Windsurf, GitHub, or any Web URL** | Single-agent format only |
+| **Cloud Sign-In & Sync** | **Sign in with GitHub or Google Drive → AES-256-GCM encrypted workspace sync across PCs** | Local machine only |
+| **Auto Bug Reporter** | **Captures errors automatically (redacting secrets) for 1-click GitHub Issue submission** | Manual log hunting |
 
 ---
 
-## Key Features
+## Beginner Guide (Easy 1–2–3 Setup)
 
-### 1. Blender 4.x Dark Studio UI
-Designed after **Blender's** iconic dark workspace (`#181818` Topbar, `#1d1d1d` Shader-Node Viewport, `#282828` Outliner & Properties Inspector, and `#141414` Bottom Console Dock):
-- **Layout & Node Router:** Visual node pipeline showing `Client Input (:4141/v1)` ➔ `Token Optimizer` ➔ `Smart Combo Router` ➔ `Free Tier Pool`.
-- **Zero Lag:** Uses `0ms` pure-JS filesystem/PATH inspection and non-blocking background HTTPS registry checks.
+### Step 1: Download & Install (Choose Any Drive `C:`, `D:`, `E:`, `F:`)
+1. Download **`OpenCode-Studio-Setup-3.0.0.exe`** from [**GitHub Releases**](https://github.com/vaasiraq-art/opencode-studio/releases/latest).
+2. Run the installer, review the **Pre-Install Apps & Drivers Checklist**, choose any drive/folder (`C:`, `D:`, `E:`, `F:`), and finish.
+3. Double-click the **OpenCode Studio** icon created on your Desktop.
 
-### 2. Non-Stop Free Coding (Auto-Switch When Quota Finishes)
-- **Dual-Layer Protection:**
-  1. `free-model-autoswitch.js` (OpenCode V2 plugin) intercepts `429` / `402` / `503` and quota errors mid-session and automatically calls `ctx.session.switchModel(...)` to switch to the next ranked free coding model.
-  2. Built-in **Smart Local Gateway (`http://127.0.0.1:4141/v1`)** routes across your connected free/paid/local providers (`smart-coding`, `priority`, `lkgp`, `round-robin`) and strips redundant ANSI/whitespace noise from large tool outputs to save 15%–70% tokens.
+### Step 2: Add a Free API Key & Scan Your Models
+1. Click the **AI Keys & Scanner** tab in the top bar.
+2. Click **Get Key** on any free provider (such as **Google AI Studio**, **OpenRouter**, **Groq**, **Cerebras**, **SambaNova**, or **Mistral**).
+3. Paste your API key and click **🔍 Scan & Read All Models in My API Key**.
+4. Click any discovered model chip to activate it immediately!
+
+### Step 3: Code Non-Stop (Automatic Free Model Switching)
+- Click **⚡ Use Smart Gateway in OpenCode** on the left shelf, then click **Launch OpenCode TUI**.
+- When your active free model's quota finishes (`HTTP 429`), OpenCode Studio automatically switches to the next free coding model in your ranked list so your project keeps building without interruption.
+- **Need help with any button?** Just hover your mouse over any button in the app to read a clear explanation in the floating Blender tooltip and bottom status bar!
+
+---
+
+## Pro & Advanced Developer Guide
+
+### 1. Local Multi-Protocol Streaming Gateway (`http://127.0.0.1:4141`)
+OpenCode Studio runs an embedded zero-bloat gateway on `127.0.0.1:4141`:
+- **OpenAI-Compatible Endpoint:** `POST http://127.0.0.1:4141/v1/chat/completions` (`stream: true` & `stream: false`)
+- **Anthropic-Compatible Endpoint:** `POST http://127.0.0.1:4141/v1/messages` (works directly with Claude Code!)
+- **Model Discovery Endpoint:** `GET http://127.0.0.1:4141/v1/models`
+- **Health & Telemetry Endpoint:** `GET http://127.0.0.1:4141/health`
+
+Click **🔗 Connect All IDEs (:4141/v1)** on the left tool shelf to configure **OpenCode V2** and generate `~/.config/opencode/ide-gateway-env.ps1` for **Claude Code, OpenAI Codex, Cursor, Cline, and Aider**.
+
+### 2. Multi-Account Key Pooling
+In the **AI Keys & Scanner** tab, you can paste **multiple API keys** (one per line or comma-separated) for any provider. The gateway automatically rotates across your key pool on every request before failing over to the next provider tier.
 
 ### 3. Universal World Skill & Plugin Harvester
-- Import skills from **any agent or website in the world**:
-  - Paste any GitHub repo (`owner/repo`), raw web URL (`SKILL.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `.mdc`), or raw prompt text.
-  - Automatically normalizes and installs into **OpenCode**, **Claude Code** (`~/.claude/skills`), **Codex** (`~/.codex/skills`), and **Gemini** (`~/.gemini/config/skills`).
-- **1-Click Cross-Agent Sync:** Unifies every skill already installed on your PC across all coding agents.
-- **Universal Plugin Installer:** Installs native OpenCode V2 plugins and auto-generates V2 compatibility bridges for custom or legacy plugins.
+In the **World Skills & Plugins** tab:
+- Paste any GitHub repo (`owner/repo`), raw web URL (`SKILL.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `.mdc`), or raw prompt text to convert and install it across **OpenCode**, **Claude Code** (`~/.claude/skills`), **Codex** (`~/.codex/skills`), and **Gemini** (`~/.gemini/config/skills`).
+- Click **⇄ Sync All Skills on PC** to unify every skill installed across all coding agents on your machine.
+- Install any OpenCode plugin via the **Universal Plugin Installer** (includes an automatic V1→V2 compatibility bridge).
 
-### 4. Auto-Bug Catcher & 1-Click GitHub Issue Reporter
-- Automatically captures runtime exceptions and command failures (redacting all API keys and tokens).
-- Submit issues directly to [`vaasiraq-art/opencode-studio/issues`](https://github.com/vaasiraq-art/opencode-studio/issues) from inside the **Bug Reporter** tab so bugs can be fixed and deployed quickly.
+### 4. Encrypted Cloud Sync Across PCs (GitHub & Google Drive)
+Open the **Cloud Sync** tab:
+1. Sign in with **GitHub** (syncs to a secret private Gist on your GitHub account) or **Google** (syncs to your Google Drive / OneDrive folder).
+2. Enter an optional **Encryption Passphrase** (uses PBKDF2 + **AES-256-GCM** to encrypt your API keys).
+3. Click **☁ Save Work to Cloud Now** on PC #1, and click **⬇ Restore Work from Cloud** on PC #2.
 
----
-
-## Run & Build Commands
-
+### 5. Build from Source
 ```bat
 git clone https://github.com/vaasiraq-art/opencode-studio.git
 cd opencode-studio
@@ -57,17 +86,16 @@ npm install
 npm start
 ```
 
-Build the Windows NSIS `.exe` Installer (`dist\OpenCode Studio Setup 2.0.0.exe`):
-
+To build the fast-unpack Windows `.exe` installer:
 ```bat
 npm run dist
 ```
 
 ---
 
-## License & Contribution Policy
+## License & Community Contributions
 
 Licensed under the **OpenCode Studio Community & Maintainer-Deployed License (`LICENSE`)**:
 - **Download & Use:** Free for everyone to download, install, and use.
-- **Issues & Bug Reports:** Users and coders can send bug reports and feature requests via the in-app **Bug Reporter** or [GitHub Issues](https://github.com/vaasiraq-art/opencode-studio/issues).
-- **Edit & Contribute:** Coders may fork and edit the code locally and submit Pull Requests; all official deployments and `.exe` releases on GitHub are reviewed and published by **@vaasiraq-art**.
+- **Auto Bug Reports & Issues:** Users and coders can submit bug reports directly from the in-app **Bug Reporter** tab (all API keys are automatically redacted) or at [GitHub Issues](https://github.com/vaasiraq-art/opencode-studio/issues).
+- **Edit & Contribute:** Coders may fork and edit the code locally and open Pull Requests; official releases and deployments on GitHub are reviewed and published by **@vaasiraq-art**.

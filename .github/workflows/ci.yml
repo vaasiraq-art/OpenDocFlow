@@ -1,0 +1,42 @@
+name: OpenCode Studio CI & Syntax Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify JavaScript Syntax
+        shell: pwsh
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check app/renderer.js
+          node --check setup-kit/config/plugins/free-model-autoswitch.js
+
+      - name: Verify PowerShell Setup Scripts Syntax
+        shell: pwsh
+        run: |
+          Get-ChildItem setup-kit/scripts -Filter *.ps1 | ForEach-Object {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors) | Out-Null
+            if ($errors) { throw "Parse error in $($_.Name): $errors" }
+          }
+
+      - name: Privacy & Secret Guard
+        shell: pwsh
+        run: |
+          $leaks = Get-ChildItem . -Recurse -File | Where-Object { $_.FullName -notmatch '\\(\.git|node_modules|dist)\\' } | Select-String -Pattern 'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{25,}'
+          if ($leaks) { throw "Potential secret detected in repository!" }

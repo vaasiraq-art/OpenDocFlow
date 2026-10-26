@@ -1,7 +1,7 @@
 {
   "name": "opencode-studio",
-  "version": "2.0.0",
-  "description": "OpenCode Studio v2.0 - Blender-UI AI Gateway, Auto-Fallback Router, Skills/Plugins Hub & Auto Bug Reporter",
+  "version": "3.0.0",
+  "description": "OpenCode Studio v3.0 - Blender 3D UI, Streaming Multi-Protocol AI Gateway, Key Pool & Live Model Scanner",
   "author": "vaasiraq-art",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
@@ -27,6 +27,7 @@
     "appId": "com.opencodestudio.desktop",
     "productName": "OpenCode Studio",
     "asar": true,
+    "compression": "store",
     "directories": {
       "output": "dist"
     },
