@@ -44,15 +44,25 @@ foreach ($file in $files) {
     }
 }
 
+function ConvertFrom-Jsonc([string]$RawText) {
+    $clean = [regex]::Replace($RawText, '(?m)^\s*//.*$', '')
+    $clean = [regex]::Replace($clean, '/\*[\s\S]*?\*/', '')
+    return ($clean | ConvertFrom-Json)
+}
+
 $cfgFile = Join-Path $ConfigDir 'opencode.jsonc'
 if (Test-Path $cfgFile) {
     if ($DryRun) {
         Write-Host "Would copy portable opencode.jsonc"
     } else {
         try {
-            $cfgObj = Get-Content $cfgFile -Raw | ConvertFrom-Json
-            if ($cfgObj.PSObject.Properties['mcp'] -and $cfgObj.mcp.PSObject.Properties['rea']) {
-                $cfgObj.mcp.PSObject.Properties.Remove('rea')
+            $cfgObj = ConvertFrom-Jsonc (Get-Content $cfgFile -Raw)
+            if ($cfgObj.PSObject.Properties['mcp']) {
+                foreach ($localMcp in @('rea', 'opendocflow')) {
+                    if ($cfgObj.mcp.PSObject.Properties[$localMcp]) {
+                        $cfgObj.mcp.PSObject.Properties.Remove($localMcp)
+                    }
+                }
                 if (($cfgObj.mcp.PSObject.Properties | Measure-Object).Count -eq 0) {
                     $cfgObj.PSObject.Properties.Remove('mcp')
                 }
@@ -63,7 +73,8 @@ if (Test-Path $cfgFile) {
             }
             ($cfgObj | ConvertTo-Json -Depth 10) | Set-Content -Path (Join-Path $ConfigSrc 'opencode.jsonc') -Encoding utf8
         } catch {
-            Copy-Item $cfgFile (Join-Path $ConfigSrc 'opencode.jsonc') -Force
+            Write-Warning "Could not sanitize opencode.jsonc; writing clean schema stub."
+            '{ "$schema": "https://opencode.ai/config.json" }' | Set-Content -Path (Join-Path $ConfigSrc 'opencode.jsonc') -Encoding utf8
         }
     }
 }

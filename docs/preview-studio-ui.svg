@@ -1,181 +1,114 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 660" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" fill="none">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#181818"/>
-      <stop offset="100%" stop-color="#121212"/>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1280" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B0E14"/>
+      <stop offset="100%" stop-color="#111726"/>
     </linearGradient>
-    <pattern id="studioGrid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#242424" stroke-width="1"/>
-    </pattern>
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4F8CFF"/>
+      <stop offset="100%" stop-color="#18D2A6"/>
+    </linearGradient>
   </defs>
 
-  <!-- Main Frame -->
-  <rect width="1200" height="660" rx="10" fill="url(#bgGrad)" stroke="#3d3d3d" stroke-width="2"/>
+  <rect width="1280" height="760" rx="14" fill="url(#bgGrad)" stroke="#253047" stroke-width="2"/>
 
   <!-- Topbar -->
-  <rect x="2" y="2" width="1196" height="38" rx="8" fill="#181818"/>
-  <circle cx="24" cy="21" r="7" fill="#e57a24" stroke="#fff" stroke-width="2.5"/>
-  <text x="38" y="25" fill="#ffffff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">OpenDocFlow</text>
-  <rect x="150" y="12" width="28" height="18" rx="3" fill="#e57a24"/>
-  <text x="156" y="25" fill="#111" font-family="Consolas, monospace" font-size="11" font-weight="bold">3.1</text>
+  <rect x="1" y="1" width="1278" height="52" rx="13" fill="#111620"/>
+  <line x1="0" y1="53" x2="1280" y2="53" stroke="#253047"/>
+  <rect x="20" y="12" width="30" height="30" rx="8" fill="url(#brandGrad)"/>
+  <text x="29" y="33" fill="#061018" font-family="Segoe UI, sans-serif" font-weight="800" font-size="16">⚡</text>
+  <text x="60" y="26" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-weight="700" font-size="15">OpenDocFlow</text>
+  <rect x="165" y="13" width="46" height="17" rx="8" fill="#1D2F52" stroke="#4F8CFF" stroke-opacity="0.5"/>
+  <text x="173" y="25" fill="#9EC2FF" font-family="Consolas, monospace" font-weight="700" font-size="10">v4.0.0</text>
+  <text x="60" y="42" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="11">AI Agent Studio • Multi-Agent Hub • DocFlow • :4141 SSE Gateway</text>
 
-  <!-- Workspace Tabs -->
-  <rect x="190" y="6" width="116" height="32" rx="4" fill="#282828"/>
-  <line x1="190" y1="38" x2="306" y2="38" stroke="#e57a24" stroke-width="3"/>
-  <text x="200" y="26" fill="#ffffff" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">Gateway Overview</text>
-  <text x="318" y="26" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">📘 Step-by-Step Guide</text>
-  <text x="454" y="26" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11.5">Combo Router</text>
-  <text x="546" y="26" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11.5">AI Keys &amp; Scanner</text>
-  <text x="662" y="26" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11.5">Free Models</text>
-  <text x="745" y="26" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11.5">World Skills &amp; Plugins</text>
-  <text x="880" y="26" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11.5">Cloud Sync</text>
+  <!-- Ctrl+K Bar -->
+  <rect x="430" y="12" width="380" height="30" rx="8" fill="#0D121B" stroke="#253047"/>
+  <text x="444" y="31" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="12">🔍 Jump to workspace, run agent, benchmark… (Ctrl+K)</text>
 
-  <!-- Topbar Right Gateway Pill -->
-  <rect x="975" y="8" width="110" height="24" rx="4" fill="#232323" stroke="#3d3d3d"/>
-  <circle cx="988" cy="20" r="4" fill="#5fb878"/>
-  <text x="998" y="24" fill="#e6e6e6" font-family="Consolas, monospace" font-size="11">:4141/v1 LIVE</text>
-  <rect x="1092" y="8" width="96" height="24" rx="4" fill="#e57a24"/>
-  <text x="1102" y="24" fill="#111" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">OpenCode TUI</text>
+  <!-- Gateway Pill -->
+  <rect x="850" y="13" width="175" height="28" rx="14" fill="#102C2A" stroke="#18D2A6" stroke-opacity="0.5"/>
+  <circle cx="866" cy="27" r="4" fill="#18D2A6"/>
+  <text x="876" y="31" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-weight="600" font-size="11.5">:4141 Online • 142 tok/s</text>
 
-  <!-- Left Panel -->
-  <rect x="4" y="42" width="220" height="460" fill="#282828" stroke="#3d3d3d"/>
-  <rect x="4" y="42" width="220" height="28" fill="#232323"/>
-  <text x="16" y="60" fill="#e57a24" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">▤ System Status &amp; Shelf</text>
+  <rect x="1038" y="13" width="222" height="28" rx="7" fill="#4F8CFF"/>
+  <text x="1064" y="31" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-weight="700" font-size="12">▶ Launch OpenCode V2 TUI</text>
 
-  <rect x="12" y="78" width="204" height="22" rx="3" fill="#303030"/>
-  <text x="18" y="93" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">▾ Active Environment</text>
-  <text x="18" y="114" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Active Model</text>
-  <text x="110" y="114" fill="#ff8c32" font-family="Consolas, monospace" font-size="11">auto-coding</text>
-  <text x="18" y="134" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">OpenCode CLI</text>
-  <text x="135" y="134" fill="#5fb878" font-family="Consolas, monospace" font-size="11">v2.0.22+</text>
-  <text x="18" y="154" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Global Skills</text>
-  <text x="160" y="154" fill="#ff8c32" font-family="Consolas, monospace" font-size="11">11+ Ready</text>
-  <text x="18" y="174" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">MCP Servers</text>
-  <text x="145" y="174" fill="#5fb878" font-family="Consolas, monospace" font-size="11">REA 6.8.0</text>
+  <!-- Left Sidebar -->
+  <rect x="1" y="54" width="220" height="705" fill="#111620"/>
+  <line x1="221" y1="54" x2="221" y2="759" stroke="#253047"/>
 
-  <!-- Left Shelf Buttons -->
-  <rect x="12" y="205" width="204" height="28" rx="4" fill="#4772b3"/>
-  <text x="24" y="223" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">📘 Open Step-by-Step Guide</text>
-  <rect x="12" y="240" width="204" height="28" rx="4" fill="#e57a24"/>
-  <text x="24" y="258" fill="#111" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">⚡ Use Smart Gateway (:4141)</text>
-  <rect x="12" y="275" width="204" height="28" rx="4" fill="#383838" stroke="#4d4d4d"/>
-  <text x="24" y="293" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11">🔗 Connect All IDEs (Claude/Codex)</text>
-  <rect x="12" y="310" width="204" height="28" rx="4" fill="#383838" stroke="#4d4d4d"/>
-  <text x="24" y="328" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11">🔍 Scan API Key Models</text>
-  <rect x="12" y="345" width="204" height="28" rx="4" fill="#383838" stroke="#4d4d4d"/>
-  <text x="24" y="363" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11">☁ Cloud Sync (GitHub / Google)</text>
+  <text x="18" y="80" fill="#657694" font-family="Segoe UI, sans-serif" font-weight="700" font-size="10">AGENTS &amp; WORKSPACE</text>
+  <rect x="10" y="90" width="202" height="34" rx="8" fill="#1B2A47" stroke="#4F8CFF" stroke-opacity="0.5"/>
+  <text x="24" y="112" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-weight="600" font-size="13">🤖  Agent Studio        LIVE</text>
+  <text x="24" y="148" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🕸  Multi-Agent Hub      8/8</text>
+  <text x="24" y="182" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">📄  DocFlow Repo &amp; Docs  NEW</text>
 
-  <!-- Center Workspace -->
-  <rect x="226" y="42" width="728" height="460" fill="#1d1d1d" stroke="#3d3d3d"/>
-  <rect x="226" y="42" width="728" height="28" fill="#232323"/>
-  <text x="240" y="60" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">⊞ AI Agent Gateway &amp; Visual Routing Pipeline — Multi-Key Pool &amp; Auto-Failover</text>
+  <text x="18" y="220" fill="#657694" font-family="Segoe UI, sans-serif" font-weight="700" font-size="10">ROUTING &amp; MODELS</text>
+  <text x="24" y="246" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">⚡  Gateway &amp; Benchmark</text>
+  <text x="24" y="280" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🔑  AI Keys &amp; Scanner</text>
+  <text x="24" y="314" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🏆  Free $0 Router</text>
 
-  <!-- Routing Pipeline Grid Canvas -->
-  <rect x="238" y="80" width="704" height="175" rx="6" fill="url(#studioGrid)" stroke="#3d3d3d"/>
-  <text x="250" y="98" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold">LIVE AI ROUTING PIPELINE (DRAG NODES TO ARRANGE • SSE STREAMING • OPENAI + ANTHROPIC WIRE • 3-LAYER SELF-HEALING)</text>
+  <text x="18" y="352" fill="#657694" font-family="Segoe UI, sans-serif" font-weight="700" font-size="10">ECOSYSTEM &amp; TOOLS</text>
+  <text x="24" y="378" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🔌  MCP Marketplace      12</text>
+  <text x="24" y="412" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🌍  Skills &amp; Plugins</text>
+  <text x="24" y="446" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="13">🚀  Turbo Installer</text>
 
-  <!-- Bezier Connections -->
-  <path d="M 386 145 C 405 145, 405 145, 420 145" stroke="#ff8c32" stroke-width="3" fill="none"/>
-  <path d="M 568 145 C 585 145, 585 145, 602 145" stroke="#9b6bcc" stroke-width="3" fill="none"/>
-  <path d="M 750 145 C 765 145, 765 145, 782 145" stroke="#5fb878" stroke-width="3" fill="none"/>
+  <!-- Main Center Stage: Agent Studio + Arena Split -->
+  <rect x="238" y="68" width="772" height="76" rx="10" fill="#151B28" stroke="#253047"/>
+  <text x="254" y="94" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-weight="600" font-size="12.5">Engine: ⚡ OpenDocFlow Native Agent (Tools + True SSE)   •   Model: studio-gateway/auto-coding</text>
+  <rect x="254" y="108" width="102" height="24" rx="12" fill="#1E3258" stroke="#4F8CFF"/>
+  <text x="266" y="124" fill="#A9C8FF" font-family="Consolas, monospace" font-size="11.5">@opendocflow</text>
+  <text x="370" y="124" fill="#8B9BB4" font-family="Consolas, monospace" font-size="11.5">@architect   @coder   @debugger   @docflow   @security   @reverse-engineer</text>
 
-  <!-- Node 1 -->
-  <rect x="248" y="112" width="138" height="90" rx="6" fill="#2b2b2b" stroke="#4d4d4d"/>
-  <rect x="248" y="112" width="138" height="22" rx="6" fill="#3b629b"/>
-  <text x="256" y="127" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">● IDE / Agent Input</text>
-  <text x="256" y="150" fill="#9d9d9d" font-family="Consolas, monospace" font-size="10">:4141/v1 + /messages</text>
-  <text x="256" y="168" fill="#5fb878" font-family="Consolas, monospace" font-size="10">SSE Streaming Ready</text>
+  <!-- Chat Feed -->
+  <rect x="238" y="156" width="772" height="360" rx="10" fill="#111620" stroke="#253047"/>
 
-  <!-- Node 2 -->
-  <rect x="420" y="112" width="148" height="90" rx="6" fill="#2b2b2b" stroke="#4d4d4d"/>
-  <rect x="420" y="112" width="148" height="22" rx="6" fill="#734c96"/>
-  <text x="428" y="127" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">Token &amp; 0ms Cache</text>
-  <text x="428" y="150" fill="#5fb878" font-family="Consolas, monospace" font-size="10">Strip ANSI: -15..70%</text>
-  <text x="428" y="168" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">SHA-256 Cache: ON</text>
+  <rect x="440" y="172" width="554" height="48" rx="9" fill="#16243D" stroke="#365996"/>
+  <text x="456" y="192" fill="#9EC2FF" font-family="Segoe UI, sans-serif" font-weight="700" font-size="11.5">You → @opendocflow</text>
+  <text x="456" y="210" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-size="12.5">Audit repository, pack architecture context, and fix gateway SSE streaming latency.</text>
 
-  <!-- Node 3 -->
-  <rect x="602" y="112" width="148" height="90" rx="6" fill="#2b2b2b" stroke="#e57a24"/>
-  <rect x="602" y="112" width="148" height="22" rx="6" fill="#c76418"/>
-  <text x="610" y="127" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">Smart Combo Router</text>
-  <text x="610" y="150" fill="#e6e6e6" font-family="Consolas, monospace" font-size="10">smart-coding + lkgp</text>
-  <text x="610" y="168" fill="#5fb878" font-family="Consolas, monospace" font-size="10">Key Pool Rotation</text>
+  <rect x="254" y="232" width="740" height="268" rx="9" fill="#151B28" stroke="#253047"/>
+  <text x="270" y="254" fill="#18D2A6" font-family="Segoe UI, sans-serif" font-weight="700" font-size="12">⚡ @opendocflow • cerebras/qwen-3-coder-480b • TTFT 184ms • 142.6 tok/s</text>
 
-  <!-- Node 4 -->
-  <rect x="782" y="112" width="150" height="104" rx="6" fill="#2b2b2b" stroke="#4d4d4d"/>
-  <rect x="782" y="112" width="150" height="22" rx="6" fill="#3b7d4f"/>
-  <text x="790" y="127" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">20+ Provider Pool</text>
-  <text x="790" y="148" fill="#5fb878" font-family="Consolas, monospace" font-size="10">#1 Gemini 2.5 Pro</text>
-  <text x="790" y="165" fill="#5fb878" font-family="Consolas, monospace" font-size="10">#2 Qwen3 Coder 480B</text>
-  <text x="790" y="182" fill="#5fb878" font-family="Consolas, monospace" font-size="10">#3 Kimi K2 / R1 Free</text>
-  <text x="790" y="199" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">#4 Local Ollama Guard</text>
+  <rect x="270" y="266" width="708" height="26" rx="6" fill="#0E1522" stroke="#263859"/>
+  <text x="282" y="283" fill="#9EC2FF" font-family="Consolas, monospace" font-size="11.5">✓ pack_repo_overview({"max_files":90})   •   ✓ search_code({"query":"forwardUpstreamChat"})</text>
 
-  <!-- Center Lower Cards -->
-  <rect x="238" y="266" width="346" height="224" rx="5" fill="#282828" stroke="#3d3d3d"/>
-  <rect x="238" y="266" width="346" height="26" fill="#303030"/>
-  <text x="248" y="283" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">▾ Live API Key Model Scanner &amp; Multi-Key Pool</text>
-  <text x="248" y="310" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Paste 1 or multiple API keys → Click Scan Key Models:</text>
-  <rect x="248" y="320" width="326" height="28" rx="4" fill="#1d1d1d" stroke="#3d3d3d"/>
-  <text x="256" y="338" fill="#5fb878" font-family="Consolas, monospace" font-size="11">AIzaSy... / sk-or-v1-... (Key Pool Active)</text>
-  <rect x="248" y="356" width="185" height="26" rx="4" fill="#4772b3"/>
-  <text x="258" y="373" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">🔍 Scan Models in My API Key</text>
-  <rect x="248" y="392" width="326" height="86" rx="4" fill="#171717" stroke="#e57a24"/>
-  <text x="256" y="410" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="10" font-weight="bold">DISCOVERED MODELS IN YOUR KEY (1-CLICK ACTIVATE):</text>
-  <rect x="256" y="420" width="140" height="22" rx="3" fill="#242424" stroke="#3d3d3d"/>
-  <text x="262" y="435" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">gemini-2.5-pro</text>
-  <rect x="404" y="420" width="156" height="22" rx="3" fill="#242424" stroke="#3d3d3d"/>
-  <text x="410" y="435" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">qwen3-coder-480b</text>
-  <rect x="256" y="448" width="140" height="22" rx="3" fill="#242424" stroke="#3d3d3d"/>
-  <text x="262" y="463" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">deepseek-r1:free</text>
-  <rect x="404" y="448" width="156" height="22" rx="3" fill="#242424" stroke="#3d3d3d"/>
-  <text x="410" y="463" fill="#ff8c32" font-family="Consolas, monospace" font-size="10">kimi-k2:free</text>
+  <text x="270" y="316" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-size="13">Replaced buffered completion forwarding with zero-buffering SSE pass-through and Anthropic</text>
+  <text x="270" y="336" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-size="13">/v1/messages live event translation for Claude Code + OpenCode V2:</text>
 
-  <rect x="596" y="266" width="346" height="224" rx="5" fill="#282828" stroke="#3d3d3d"/>
-  <rect x="596" y="266" width="346" height="26" fill="#303030"/>
-  <text x="606" y="283" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">▾ Universal World Skill &amp; Plugin Harvester</text>
-  <text x="606" y="310" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Imports Claude Code, Codex, Cursor, Windsurf &amp; Web Skills:</text>
-  <rect x="606" y="320" width="326" height="26" rx="4" fill="#4772b3"/>
-  <text x="618" y="337" fill="#fff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">⇄ Sync All Skills on PC (Claude + Codex + OpenCode)</text>
-  <rect x="606" y="356" width="326" height="26" rx="4" fill="#e57a24"/>
-  <text x="618" y="373" fill="#111" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">☁ Cloud Sync Workspace (GitHub Secret Gist / Google)</text>
-  <rect x="606" y="392" width="326" height="86" rx="4" fill="#1d1d1d" stroke="#3d3d3d"/>
-  <text x="616" y="412" fill="#5fb878" font-family="Consolas, monospace" font-size="10.5">✓ Plugin: opencode-agent-memory@0.3.0</text>
-  <text x="616" y="430" fill="#5fb878" font-family="Consolas, monospace" font-size="10.5">✓ Plugin: cc-safety-net@2.6.19</text>
-  <text x="616" y="448" fill="#5fb878" font-family="Consolas, monospace" font-size="10.5">✓ Plugin: free-model-autoswitch.js</text>
-  <text x="616" y="466" fill="#ff8c32" font-family="Consolas, monospace" font-size="10.5">✓ MCP: REA 6.8.0 (229 Tools) + Graphify 0.9.95</text>
+  <rect x="270" y="350" width="708" height="132" rx="7" fill="#090D14" stroke="#253047"/>
+  <text x="284" y="374" fill="#2DD4BF" font-family="Consolas, monospace" font-size="12">// Zero-buffering SSE pipe + live TTFT &amp; tok/s telemetry</text>
+  <text x="284" y="396" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'X-Studio-Routed-Model': cand.fullRef });</text>
+  <text x="284" y="418" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">res.on('data', (chunk) =&gt; clientRes.write(chunk)); // 0ms first-token latency</text>
+  <text x="284" y="440" fill="#9EC2FF" font-family="Consolas, monospace" font-size="12">✓ Registered @opendocflow + 7 Specialists + Native MCP Server (6 tools)</text>
+  <text x="284" y="462" fill="#18D2A6" font-family="Consolas, monospace" font-size="12">✓ Multi-Key Pool Active • Self-Healing 429 Failover Ready</text>
 
-  <!-- Right Inspector -->
-  <rect x="956" y="42" width="240" height="460" fill="#282828" stroke="#3d3d3d"/>
-  <rect x="956" y="42" width="240" height="28" fill="#232323"/>
-  <text x="968" y="60" fill="#e57a24" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">⚙ Gateway Inspector</text>
-
-  <rect x="964" y="78" width="224" height="170" rx="4" fill="#303030" stroke="#3d3d3d"/>
-  <text x="974" y="96" fill="#ffffff" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">▾ Smart Local Gateway (:4141)</text>
-  <text x="974" y="118" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">OpenAI Wire: :4141/v1</text>
-  <text x="974" y="138" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Anthropic Wire: :4141/v1/messages</text>
-  <text x="974" y="158" fill="#5fb878" font-family="Segoe UI, sans-serif" font-size="11">✓ Real SSE Streaming: ON</text>
-  <text x="974" y="178" fill="#5fb878" font-family="Segoe UI, sans-serif" font-size="11">✓ Token Optimizer: ON (-42%)</text>
-  <text x="974" y="198" fill="#5fb878" font-family="Segoe UI, sans-serif" font-size="11">✓ 0ms Prompt Cache: ON</text>
-  <text x="974" y="218" fill="#5fb878" font-family="Segoe UI, sans-serif" font-size="11">✓ Auto-Bug Catcher: ON</text>
-
-  <rect x="964" y="258" width="224" height="125" rx="4" fill="#303030" stroke="#3d3d3d"/>
-  <text x="974" y="276" fill="#ffffff" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">▾ Built-In User Guide</text>
-  <text x="974" y="298" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="11">Every button shows instant</text>
-  <text x="974" y="314" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="11">hover help + Step-by-Step</text>
-  <text x="974" y="330" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="11">Guide tab for every workflow!</text>
+  <!-- Composer -->
+  <rect x="238" y="528" width="772" height="58" rx="10" fill="#151B28" stroke="#253047"/>
+  <text x="256" y="561" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="12.5">Ask @opendocflow anything, edit workspace files, or press Ctrl+Enter to send…</text>
+  <rect x="920" y="539" width="76" height="36" rx="7" fill="#4F8CFF"/>
+  <text x="937" y="562" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-weight="700" font-size="12.5">Send ↵</text>
 
   <!-- Bottom Console Dock -->
-  <rect x="4" y="504" width="1192" height="126" fill="#141414" stroke="#3d3d3d"/>
-  <rect x="4" y="504" width="1192" height="24" fill="#232323"/>
-  <rect x="12" y="508" width="56" height="16" rx="3" fill="#e57a24"/>
-  <text x="17" y="519" fill="#111" font-family="Consolas, monospace" font-size="10" font-weight="bold">CONSOLE</text>
-  <text x="76" y="520" fill="#9d9d9d" font-family="Segoe UI, sans-serif" font-size="11">Embedded PowerShell &amp; Agent Console</text>
-  <text x="16" y="548" fill="#5fb878" font-family="Consolas, monospace" font-size="11.5">OpenDocFlow v3.1 Ready • 0ms Startup</text>
-  <text x="16" y="568" fill="#dcdcdc" font-family="Consolas, monospace" font-size="11.5">[Smart Gateway] Listening on http://127.0.0.1:4141/v1 (OpenAI + Anthropic SSE Streaming)</text>
-  <text x="16" y="588" fill="#ff8c32" font-family="Consolas, monospace" font-size="11.5">PS &gt; opencode</text>
+  <rect x="222" y="598" width="798" height="161" fill="#080B10"/>
+  <line x1="222" y1="598" x2="1020" y2="598" stroke="#253047"/>
+  <text x="238" y="620" fill="#4F8CFF" font-family="Segoe UI, sans-serif" font-weight="700" font-size="12">⚡ Live Gateway Requests (18)</text>
+  <text x="430" y="620" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="12">💻 Shell Console     📡 Gateway Events</text>
+  <text x="238" y="650" fill="#C5D4EB" font-family="Consolas, monospace" font-size="11.5">13:20:04  OpenAI     auto-coding  → cerebras/qwen-3-coder-480b     184ms   142.6 tok/s  [200 OK]</text>
+  <text x="238" y="672" fill="#C5D4EB" font-family="Consolas, monospace" font-size="11.5">13:20:19  Anthropic  claude-code  → google/gemini-2.5-pro          310ms    89.4 tok/s  [200 SSE]</text>
+  <text x="238" y="694" fill="#2DD4BF" font-family="Consolas, monospace" font-size="11.5">13:20:31  OpenAI     auto-coding  → openrouter/qwen3-coder:free      0ms  9999.0 tok/s  [CACHE HIT]</text>
 
-  <!-- Bottom Status Bar -->
-  <rect x="2" y="632" width="1196" height="26" rx="4" fill="#181818"/>
-  <text x="14" y="649" fill="#ff8c32" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">INFO:</text>
-  <text x="52" y="649" fill="#e6e6e6" font-family="Segoe UI, sans-serif" font-size="11">Hover over any button to see its full explanation • Click 📘 Step-by-Step Guide for full walkthrough</text>
-  <text x="1030" y="649" fill="#9d9d9d" font-family="Consolas, monospace" font-size="11">Gateway :4141/v1 • v3.1.0</text>
+  <!-- Right Telemetry Drawer -->
+  <rect x="1021" y="54" width="258" height="705" fill="#111620"/>
+  <line x1="1021" y1="54" x2="1021" y2="759" stroke="#253047"/>
+  <text x="1038" y="82" fill="#E6EDF7" font-family="Segoe UI, sans-serif" font-weight="700" font-size="13">📡 Live Speed Leaderboard</text>
+  <rect x="1036" y="98" width="228" height="34" rx="7" fill="#0D121B" stroke="#253047"/>
+  <text x="1048" y="120" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">cerebras       142.6 tok/s</text>
+  <rect x="1036" y="140" width="228" height="34" rx="7" fill="#0D121B" stroke="#253047"/>
+  <text x="1048" y="162" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">groq           118.2 tok/s</text>
+  <rect x="1036" y="182" width="228" height="34" rx="7" fill="#0D121B" stroke="#253047"/>
+  <text x="1048" y="204" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">google          89.4 tok/s</text>
+  <rect x="1036" y="224" width="228" height="34" rx="7" fill="#0D121B" stroke="#253047"/>
+  <text x="1048" y="246" fill="#E6EDF7" font-family="Consolas, monospace" font-size="12">openrouter      64.1 tok/s</text>
 </svg>

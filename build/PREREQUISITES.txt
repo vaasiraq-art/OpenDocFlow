@@ -1,28 +1,32 @@
 ========================================================================
-  OpenDocFlow - PRE-INSTALL CHECKLIST & REQUIRED APPS / DRIVERS
+  OpenDocFlow v4.0 — PRE-INSTALL OVERVIEW & TURBO MULTI-AGENT STACK
 ========================================================================
 
-Before installing OpenDocFlow to your chosen drive (C:, D:, E:, F:, etc.),
-please review the required and optional tools & drivers below.
+Welcome to OpenDocFlow v4.0! You can install OpenDocFlow to any drive
+or folder (C:, D:, E:, F:, etc.) and optionally manage a 100% portable
+AI agent toolchain.
 
-On first launch, OpenDocFlow will detect what is already installed on
-this PC and ask you before installing any missing component:
+On launch (<220ms GPU-accelerated cold start), OpenDocFlow detects your
+existing tools and lets you install missing ones in parallel with 1 click:
 
-1. Core AI Agent Runtime (Required)
+1. Built-In Ready Out of the Box (0 Extra Install Required)
+   - Live Autonomous Agent Studio (@opendocflow + 7 Specialist Personas)
+   - True Zero-Buffering SSE Smart Gateway on http://127.0.0.1:4141/v1
+     (Supports both OpenAI /v1/chat/completions & Anthropic /v1/messages)
+   - DocFlow Repo-to-Markdown Context Packager & Live AI Docs Generator
+   - Native OpenDocFlow MCP Server (6 tools) & 12-Server MCP Marketplace
+   - Live Parallel Provider Speed Benchmark (TTFT ms & tok/s)
+
+2. Supported CLI Coding Agents (1-Click Turbo Parallel Install)
    - OpenCode V2 CLI (opencode-ai)
-   - Node.js 22.20+ or 26.12.1+ (Required for skills CLI & REA 6.8.0 MCP)
-   - Git for Windows
+   - Claude Code (@anthropic-ai/claude-code)
+   - OpenAI Codex CLI (@openai/codex)
+   - Google Gemini CLI (@google/gemini-cli)
+   - Qwen Code CLI (@qwen-code/qwen-code)
+   - Aider Git Pair Programmer & Ollama Local Models
 
-2. Knowledge Graph & Reverse Engineering (Bundled / Recommended)
-   - Python 3.10+ & uv package manager (for Graphify 0.9.95)
-   - REA 6.8.0 (Reverse Engineer Anything MCP + 229 tools)
-   - OpenCode V2 Plugins: opencode-agent-memory@0.3.0, cc-safety-net@2.6.19
-   - 11 Global Agent Skills (Graphify, REA, 9 Vercel Skills)
+3. Recommended Runtimes & Intelligence Suites
+   - Node.js 22.20+ / 24+, Git for Windows, Python + Astral uv
+   - Graphify Code Knowledge Graph & REA (229 Reverse Engineering Tools)
 
-3. Optional Device & Terminal Drivers
-   - Android SDK Platform-Tools (ADB / Fastboot) & Google USB Driver
-     (for Android phone testing & APK installation)
-   - Windows Terminal (Recommended for full interactive TUI sessions)
-
-Click "I Agree" to continue, choose your target drive/folder (C:, D:, E:, F:),
-and create your Desktop shortcut.
+Click "I Agree" to choose your installation directory and finish setup.

@@ -1,4 +1,4 @@
-name: OpenDocFlow CI & Syntax Verification
+name: OpenDocFlow v4.0 CI & Syntax Verification
 
 on:
   push:
@@ -18,13 +18,25 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Verify JavaScript Syntax
+      - name: Verify All JavaScript & ESM Modules
         shell: pwsh
         run: |
-          node --check main.js
-          node --check preload.js
-          node --check app/renderer.js
-          node --check setup-kit/config/plugins/free-model-autoswitch.js
+          $jsFiles = @(
+            'main.js',
+            'preload.js',
+            'mcp/opendocflow-mcp.mjs',
+            'lib/docflow-engine.js',
+            'lib/gateway-benchmark.js',
+            'lib/agents-installer.js',
+            'lib/providers-catalog.js',
+            'lib/agent-runner.js',
+            'app/renderer.js',
+            'setup-kit/config/plugins/free-model-autoswitch.js'
+          )
+          foreach ($f in $jsFiles) {
+            node --check $f
+            if ($LASTEXITCODE -ne 0) { throw "Syntax error in $f" }
+          }
 
       - name: Verify PowerShell Setup Scripts Syntax
         shell: pwsh
@@ -38,5 +50,6 @@ jobs:
       - name: Privacy & Secret Guard
         shell: pwsh
         run: |
-          $leaks = Get-ChildItem . -Recurse -File | Where-Object { $_.FullName -notmatch '\\(\.git|node_modules|dist)\\' } | Select-String -Pattern 'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{25,}'
+          $tracked = git ls-files | Where-Object { $_ -notmatch '\.(png|ico|zip)$' -and (Test-Path $_) }
+          $leaks = $tracked | Select-String -Pattern 'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{25,}'
           if ($leaks) { throw "Potential secret detected in repository!" }

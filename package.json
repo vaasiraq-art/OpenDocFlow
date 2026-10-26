@@ -1,7 +1,7 @@
 {
   "name": "opendocflow",
-  "version": "3.2.0",
-  "description": "OpenDocFlow v3.2 - Complete AI Agent Gateway, MCP Manager, Agents/Commands Studio, Profiles, Bulk Skill/Plugin Editor & Key Scanner",
+  "version": "4.0.0",
+  "description": "OpenDocFlow v4.0 — Autonomous AI Agent Studio, Multi-Agent Hub (@opendocflow + OpenCode V2 + Claude + Codex + Gemini + Qwen + Aider), DocFlow Repo Packager & AI Docs, 1-Click MCP Marketplace & True-SSE Smart Gateway",
   "author": "vaasiraq-art",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
@@ -14,7 +14,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis portable"
   },
   "dependencies": {
     "jsonc-parser": "^3.3.1"
@@ -27,7 +27,10 @@
     "appId": "com.opendocflow.desktop",
     "productName": "OpenDocFlow",
     "asar": true,
-    "compression": "store",
+    "asarUnpack": [
+      "mcp/**/*"
+    ],
+    "compression": "normal",
     "protocols": [
       {
         "name": "OpenDocFlow Deep Link",
@@ -42,6 +45,8 @@
     "files": [
       "main.js",
       "preload.js",
+      "lib/**/*",
+      "mcp/**/*",
       "app/**/*",
       "assets/**/*",
       "package.json"
@@ -62,11 +67,18 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
     },
     "nsis": {
+      "artifactName": "${productName} Setup ${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,
@@ -76,6 +88,9 @@
       "shortcutName": "OpenDocFlow",
       "license": "build/PREREQUISITES.txt",
       "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     }
   }
 }

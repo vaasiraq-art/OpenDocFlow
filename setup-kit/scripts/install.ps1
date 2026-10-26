@@ -99,10 +99,31 @@ if (Test-Path $ConfigDir) {
     }
 }
 
+function ConvertFrom-Jsonc([string]$RawText) {
+    $clean = [regex]::Replace($RawText, '(?m)^\s*//.*$', '')
+    $clean = [regex]::Replace($clean, '/\*[\s\S]*?\*/', '')
+    return ($clean | ConvertFrom-Json)
+}
+
 Write-Step "Installing OpenCode plugins"
+$existingProviders = $null
+$existingMcp = $null
+$existingAgents = $null
+$existingCommands = $null
+$existingCfgPath = Join-Path $ConfigDir 'opencode.jsonc'
+if (Test-Path $existingCfgPath) {
+    try {
+        $prevObj = ConvertFrom-Jsonc (Get-Content $existingCfgPath -Raw)
+        if ($prevObj.PSObject.Properties['providers']) { $existingProviders = $prevObj.providers }
+        if ($prevObj.PSObject.Properties['mcp'])       { $existingMcp = $prevObj.mcp }
+        if ($prevObj.PSObject.Properties['agents'])    { $existingAgents = $prevObj.agents }
+        if ($prevObj.PSObject.Properties['commands'])  { $existingCommands = $prevObj.commands }
+    } catch { }
+}
+
 $plugins = @()
 try {
-    $snapshotConfig = Get-Content (Join-Path $ConfigSrc 'opencode.jsonc') -Raw | ConvertFrom-Json
+    $snapshotConfig = ConvertFrom-Jsonc (Get-Content (Join-Path $ConfigSrc 'opencode.jsonc') -Raw)
     if ($snapshotConfig.plugins) {
         foreach ($entry in $snapshotConfig.plugins) {
             if ($entry -is [string]) {
@@ -126,11 +147,13 @@ if ($DryRun) {
         Write-Host "Would run: opencode plugin add $plugin"
     }
 } else {
-    @'
+    if (-not (Test-Path $existingCfgPath)) {
+        @'
 {
   "$schema": "https://opencode.ai/config.json"
 }
-'@ | Set-Content -Path (Join-Path $ConfigDir 'opencode.jsonc') -Encoding utf8
+'@ | Set-Content -Path $existingCfgPath -Encoding utf8
+    }
 
     foreach ($plugin in $plugins) {
         Write-Host "Adding $plugin"
@@ -152,6 +175,17 @@ foreach ($file in $files) {
             Copy-Item $src (Join-Path $ConfigDir $file) -Force
         }
     }
+}
+
+if (-not $DryRun -and (Test-Path $existingCfgPath)) {
+    try {
+        $mergedCfg = ConvertFrom-Jsonc (Get-Content $existingCfgPath -Raw)
+        if ($existingProviders) { $mergedCfg | Add-Member -NotePropertyName 'providers' -NotePropertyValue $existingProviders -Force }
+        if ($existingMcp)       { $mergedCfg | Add-Member -NotePropertyName 'mcp'       -NotePropertyValue $existingMcp       -Force }
+        if ($existingAgents)    { $mergedCfg | Add-Member -NotePropertyName 'agents'    -NotePropertyValue $existingAgents    -Force }
+        if ($existingCommands)  { $mergedCfg | Add-Member -NotePropertyName 'commands'  -NotePropertyValue $existingCommands  -Force }
+        ($mergedCfg | ConvertTo-Json -Depth 10) | Set-Content -Path $existingCfgPath -Encoding utf8
+    } catch { }
 }
 
 $memorySrc = Join-Path $ConfigSrc 'memory'
@@ -221,7 +255,7 @@ if ($SkipRea) {
     $reaScript = Join-Path $reaPrefix 'node_modules\rea-agents\scripts\rea.mjs'
     if ((Test-Path $reaScript) -and $Node) {
         $cfgPath = Join-Path $ConfigDir 'opencode.jsonc'
-        $cfgObj = Get-Content $cfgPath -Raw | ConvertFrom-Json
+        $cfgObj = ConvertFrom-Jsonc (Get-Content $cfgPath -Raw)
         if (-not $cfgObj.PSObject.Properties['mcp']) {
             $cfgObj | Add-Member -NotePropertyName 'mcp' -NotePropertyValue ([pscustomobject]@{})
         }
