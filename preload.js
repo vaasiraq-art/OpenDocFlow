@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('studioAPI', {
   createNewProject: (payload) => ipcRenderer.invoke('studio:new-project', payload),
   searchSkills: (query) => ipcRenderer.invoke('studio:search-skills', query),
   installSkill: (repoAndSkill) => ipcRenderer.invoke('studio:install-skill', repoAndSkill),
+  importUniversalSkill: (payload) => ipcRenderer.invoke('studio:import-universal-skill', payload),
+  syncAllAgentsSkills: () => ipcRenderer.invoke('studio:sync-all-agent-skills'),
+  installUniversalPlugin: (payload) => ipcRenderer.invoke('studio:install-universal-plugin', payload),
   getProvidersState: () => ipcRenderer.invoke('studio:get-providers'),
   saveProviderKey: (payload) => ipcRenderer.invoke('studio:save-provider', payload),
   removeProviderKey: (id) => ipcRenderer.invoke('studio:remove-provider', id),
@@ -19,6 +22,12 @@ contextBridge.exposeInMainWorld('studioAPI', {
   getFallbackChain: () => ipcRenderer.invoke('studio:get-fallback-chain'),
   saveFallbackChain: (payload) => ipcRenderer.invoke('studio:save-fallback-chain', payload),
   triggerNextFreeModelNow: () => ipcRenderer.invoke('studio:switch-next-free-model'),
+  getGatewayTelemetry: () => ipcRenderer.invoke('studio:get-gateway-telemetry'),
+  updateGatewaySettings: (settings) => ipcRenderer.invoke('studio:update-gateway-settings', settings),
+  connectLocalGatewayToOpenCode: () => ipcRenderer.invoke('studio:connect-local-gateway'),
+  getBugReports: () => ipcRenderer.invoke('studio:get-bug-reports'),
+  reportBugToGitHub: (payload) => ipcRenderer.invoke('studio:report-bug-github', payload),
+  clearBugReports: () => ipcRenderer.invoke('studio:clear-bug-reports'),
   runTerminalCommand: (cmd, cwd) => ipcRenderer.invoke('studio:terminal-run', { cmd, cwd }),
   stopTerminalCommand: () => ipcRenderer.invoke('studio:terminal-stop'),
   openExternalTerminal: (cwd, cmd) => ipcRenderer.invoke('studio:open-external-terminal', { cwd, cmd }),
@@ -30,5 +39,10 @@ contextBridge.exposeInMainWorld('studioAPI', {
     const listener = (_event, data) => cb(data);
     ipcRenderer.on('studio:terminal-data', listener);
     return () => ipcRenderer.removeListener('studio:terminal-data', listener);
+  },
+  onBugCaptured: (cb) => {
+    const listener = (_event, bug) => cb(bug);
+    ipcRenderer.on('studio:bug-captured', listener);
+    return () => ipcRenderer.removeListener('studio:bug-captured', listener);
   }
 });

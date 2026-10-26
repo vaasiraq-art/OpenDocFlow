@@ -1,0 +1,17 @@
+name: Feature / Skill / Provider Request
+description: Suggest a new AI provider, routing strategy, skill, or UI improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature or Improvement Summary
+      description: Describe the feature, AI provider, or skill you would like added.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Implementation Notes (Optional for Coders)
+      description: If you edited the code locally or want to submit a PR for vaasiraq-art to deploy, describe it here.

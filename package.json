@@ -1,9 +1,16 @@
 {
   "name": "opencode-studio",
-  "version": "1.0.0",
-  "description": "OpenCode Studio - All-in-one installer, skill/plugin manager, embedded terminal, and AI model/key hub",
-  "author": "OpenCode Studio",
-  "license": "MIT",
+  "version": "2.0.0",
+  "description": "OpenCode Studio v2.0 - Blender-UI AI Gateway, Auto-Fallback Router, Skills/Plugins Hub & Auto Bug Reporter",
+  "author": "vaasiraq-art",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaasiraq-art/opencode-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vaasiraq-art/opencode-studio/issues"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",

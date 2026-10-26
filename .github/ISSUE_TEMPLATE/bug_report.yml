@@ -1,0 +1,31 @@
+name: Bug Report
+description: Report a bug or error in OpenCode Studio so vaasiraq-art can fix and deploy it
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting this bug! **vaasiraq-art** reviews all submitted issues for the next official deployment.
+        *(Tip: You can also send bug reports automatically from the **Bug Reporter** tab inside OpenCode Studio!)*
+  - type: input
+    id: version
+    attributes:
+      label: OpenCode Studio Version & OS
+      description: Which version of OpenCode Studio and Windows are you running?
+      placeholder: "v2.0.0 on Windows 11 x64"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Error Details / Logs
+      description: Paste the error message or stack trace (never include API keys).
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce or Proposed Fix
+      description: How did the error happen? If you are a coder and found the fix, share the file/line here!

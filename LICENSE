@@ -1,21 +1,29 @@
-MIT License
+OpenCode Studio Community & Maintainer-Deployed License (v2.0)
+Copyright (c) 2026 vaasiraq-art (https://github.com/vaasiraq-art/opencode-studio)
 
-Copyright (c) 2026 vaasiraq-art
+1. RIGHT TO DOWNLOAD & USE
+   Any user or developer may download, install, and run OpenCode Studio and its
+   bundled tools free of charge on any personal or development machine.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. RIGHT TO REPORT ISSUES & BUGS
+   Users and developers are encouraged to submit bug reports, auto-captured
+   error diagnostics, and feature requests via GitHub Issues at:
+   https://github.com/vaasiraq-art/opencode-studio/issues
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+3. RIGHT TO EDIT LOCALLY & SUBMIT CONTRIBUTIONS
+   Developers may fork, inspect, and edit the source code locally to fix bugs,
+   add providers, improve routing strategies, or add skills/plugins, and submit
+   Pull Requests back to the official repository.
+
+4. OFFICIAL DEPLOYMENT & RELEASE AUTHORITY
+   Official releases, signed installers (.exe), and main-branch deployments of
+   OpenCode Studio are reviewed, approved, and published exclusively by the
+   repository maintainer (vaasiraq-art) on:
+   https://github.com/vaasiraq-art/opencode-studio
+
+   Redistributing modified builds under the name "OpenCode Studio" as official
+   releases without prior maintainer approval is not permitted.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.

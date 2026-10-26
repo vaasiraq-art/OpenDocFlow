@@ -45,7 +45,7 @@ Use `-DryRun` to preview without changing anything.
 ## New project
 
 ```bat
-new-project.bat "D:\apps\MyNewApp"
+new-project.bat "C:\Projects\MyNewApp"
 ```
 
 It creates the project folder, `.opencode/plugins`, `.opencode/skills`, a
